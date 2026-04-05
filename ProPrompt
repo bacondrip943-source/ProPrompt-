@@ -1,0 +1,141 @@
+<!DOCTYPE html><html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prompt Library PRO</title>
+<script src="https://cdn.tailwindcss.com"></script>
+</head><body class="bg-gray-900 text-white min-h-screen"><div class="max-w-7xl mx-auto p-6"><h1 class="text-3xl font-bold mb-6">🚀 Prompt Library PRO</h1><!-- SEARCH + CATEGORY --><div class="flex gap-4 mb-6 flex-wrap">
+<input id="search" placeholder="Buscar..." class="p-3 rounded bg-gray-800 w-full md:w-1/3">
+<select id="category" class="p-3 rounded bg-gray-800">
+<option value="">Todas categorias</option>
+</select>
+<button onclick="generatePromptAI()" class="bg-purple-600 px-4 py-2 rounded">✨ Criar com IA</button>
+</div><!-- CARDS --><div id="grid" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6"></div></div><script>
+// ================= DATA =================
+let prompts = JSON.parse(localStorage.getItem('prompts')) || [
+{
+name:"SEO IA",
+category:"Marketing",
+description:"Otimização para IA",
+prompt:"Otimize este conteúdo para IA e SEO moderno"
+},
+{
+name:"Copywriter",
+category:"Marketing",
+description:"Texto persuasivo",
+prompt:"Crie um texto de vendas altamente persuasivo"
+},
+{
+name:"Dev FullStack",
+category:"Programação",
+description:"App completo",
+prompt:"Crie um sistema completo com autenticação"
+}
+];
+
+// ================= INIT =================
+const grid = document.getElementById('grid');
+const search = document.getElementById('search');
+const categorySelect = document.getElementById('category');
+
+function save(){
+localStorage.setItem('prompts', JSON.stringify(prompts));
+}
+
+function render(){
+const searchVal = search.value.toLowerCase();
+const catVal = categorySelect.value;
+
+grid.innerHTML = "";
+
+let filtered = prompts.filter(p =>
+(p.name.toLowerCase().includes(searchVal)) &&
+(!catVal || p.category === catVal)
+);
+
+filtered.forEach((p,i)=>{
+let fav = p.fav ? '⭐' : '☆';
+
+grid.innerHTML += `
+<div class="bg-gray-800 p-5 rounded-xl">
+<h2 class="text-xl font-bold">${p.name}</h2>
+<p class="text-sm text-gray-400">${p.description}</p>
+<span class="text-xs bg-gray-700 px-2 py-1 rounded">${p.category}</span>
+
+<div class="flex gap-2 mt-4">
+<button onclick="copy(${i},this)" class="bg-blue-600 px-3 py-1 rounded">Copiar</button>
+<button onclick="toggleFav(${i})">${fav}</button>
+<button onclick="deleteItem(${i})" class="text-red-400">🗑</button>
+</div>
+</div>`;
+});
+
+updateCategories();
+}
+
+function updateCategories(){
+let cats = [...new
+// ================= CONTINUAÇÃO DO SCRIPT =================
+
+function updateCategories(){
+    let cats = [...new Set(prompts.map(p => p.category))];
+    categorySelect.innerHTML = '<option value="">Todas categorias</option>';
+    cats.forEach(cat => {
+        categorySelect.innerHTML += `<option value="${cat}">${cat}</option>`;
+    });
+}
+
+function copy(index, btn) {
+    const text = prompts[index].prompt;
+    navigator.clipboard.writeText(text).then(() => {
+        const originalText = btn.innerText;
+        btn.innerText = "Copiado! ✅";
+        btn.classList.replace('bg-blue-600', 'bg-green-600');
+        setTimeout(() => {
+            btn.innerText = originalText;
+            btn.classList.replace('bg-green-600', 'bg-blue-600');
+        }, 2000);
+    });
+}
+
+function toggleFav(index) {
+    prompts[index].fav = !prompts[index].fav;
+    save();
+    render();
+}
+
+function deleteItem(index) {
+    if(confirm("Deseja excluir este prompt?")) {
+        prompts.splice(index, 1);
+        save();
+        render();
+    }
+}
+
+// Escutadores de eventos para busca e filtro
+search.addEventListener('input', render);
+categorySelect.addEventListener('change', render);
+
+// Inicialização
+render();
+
+// Função para simular a criação com IA (Passo 1 do seu plano)
+function generatePromptAI() {
+    const nome = prompt("Para qual profissão ou tarefa deseja criar um prompt?");
+    if(nome) {
+        // Aqui você pode integrar uma chamada de API no futuro
+        // Por enquanto, ele cria um card estruturado automaticamente
+        const novo = {
+            name: nome,
+            category: "IA Gerada",
+            description: "Prompt otimizado por IA",
+            prompt: `Aja como um especialista em ${nome}. Sua tarefa é realizar...`
+        };
+        prompts.push(novo);
+        save();
+        render();
+    }
+}
+</script>
+</body>
+</html>
