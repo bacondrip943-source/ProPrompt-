@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Promptlandia - Lumina Multilingual Voice</title>
+    <title>Promptlandia - Lumina Ultimate Edition</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -13,28 +13,30 @@
         .loader-hidden { opacity: 0; visibility: hidden; transition: 0.5s; }
         .ia-chat-interface { background: radial-gradient(circle at top right, #1e1b4b, #020617); border: 1px solid rgba(99, 102, 241, 0.2); }
         .card-prof { background: #0f172a; border: 1px solid rgba(255,255,255,0.05); border-radius: 2rem; transition: 0.4s; cursor: pointer; }
-        .card-prof:hover { border-color: #6366f1; transform: translateY(-5px); }
+        .card-prof:hover { border-color: #6366f1; transform: translateY(-5px); box-shadow: 0 10px 20px -10px rgba(99, 102, 241, 0.5); }
         .chat-scroll::-webkit-scrollbar { width: 4px; }
         .chat-scroll::-webkit-scrollbar-thumb { background: #312e81; border-radius: 10px; }
-        .voice-btn { cursor: pointer; transition: 0.3s; padding: 5px; }
-        .voice-btn:hover { color: #6366f1; transform: scale(1.2); }
+        .prompt-box { background: rgba(99, 102, 241, 0.1); border: 1px dashed #6366f1; padding: 1.5rem; border-radius: 1.5rem; margin-top: 1rem; color: #a5b4fc; font-family: monospace; position: relative; }
+        .btn-action { cursor: pointer; transition: 0.2s; opacity: 0.7; }
+        .btn-action:hover { opacity: 1; transform: scale(1.1); color: #6366f1; }
     </style>
 </head>
 <body class="bg-slate-950 text-white font-sans" onclick="initAudio()">
 
     <audio id="snd-click" src="https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3"></audio>
+    <audio id="snd-msg" src="https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3"></audio>
 
     <div id="loader" class="loader-wrapper">
         <i class="fas fa-cog gear-rotate text-7xl text-indigo-500"></i>
-        <h2 class="text-xl font-black mt-4 uppercase text-indigo-400">Lumina Polyglot</h2>
+        <h2 class="text-xl font-black mt-4 uppercase text-indigo-400">Lumina 3.0 Core</h2>
     </div>
 
     <nav class="fixed top-0 w-full z-40 bg-slate-950/80 backdrop-blur-md p-4 flex justify-between items-center px-6 border-b border-white/5">
-        <h1 class="text-xl font-black italic text-indigo-500">PROMPTLANDIA</h1>
+        <h1 class="text-xl font-black italic text-indigo-500 tracking-tighter">PROMPTLANDIA</h1>
         
         <div class="flex bg-slate-900 p-1 rounded-2xl border border-white/5">
-            <button onclick="showTab('db')" id="tab-db" class="px-4 py-2 rounded-xl bg-indigo-600 text-[10px] font-black uppercase">Database</button>
-            <button onclick="showTab('ia')" id="tab-ia" class="px-4 py-2 rounded-xl text-slate-400 text-[10px] font-black uppercase ml-1">IA Chat</button>
+            <button onclick="playSnd('snd-click'); showTab('db')" id="tab-db" class="px-4 py-2 rounded-xl bg-indigo-600 text-[10px] font-black uppercase transition-all">Database</button>
+            <button onclick="playSnd('snd-click'); showTab('ia')" id="tab-ia" class="px-4 py-2 rounded-xl text-slate-400 text-[10px] font-black uppercase ml-1 transition-all">Lumina AI</button>
         </div>
 
         <select id="langSelect" onchange="updateLang()" class="bg-slate-900 text-white text-[10px] font-bold p-2 rounded-lg border border-white/10 outline-none">
@@ -55,75 +57,87 @@
         <div class="ia-chat-interface rounded-[3rem] h-full flex flex-col overflow-hidden shadow-2xl">
             <div id="chatBox" class="flex-1 overflow-y-auto p-8 space-y-6 chat-scroll">
                 <div class="flex gap-4">
-                    <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shrink-0"><i class="fas fa-robot text-white text-xs"></i></div>
+                    <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shrink-0 shadow-lg"><i class="fas fa-robot text-white text-xs"></i></div>
                     <div class="bg-white/5 p-6 rounded-[2rem] rounded-tl-none text-sm max-w-[85%] border border-white/5 relative">
-                        <span id="txt-welcome">Olá! Eu sou a Lumina. Como posso ajudar hoje?</span>
-                        <div onclick="speakText(this.parentElement.innerText)" class="absolute -right-10 top-4 voice-btn text-indigo-400"><i class="fas fa-volume-up"></i></div>
+                        <span id="txt-welcome">Olá! Eu sou a Lumina. Digite uma profissão (ex: Arqueólogo) e eu criarei um prompt técnico exclusivo para você agora.</span>
+                        <div onclick="speakText(this.parentElement.innerText)" class="absolute -right-10 top-4 btn-action"><i class="fas fa-volume-up"></i></div>
                     </div>
                 </div>
             </div>
             <div class="p-6 bg-slate-950/40">
                 <div class="bg-slate-900 rounded-[2.5rem] border border-white/10 p-2 flex items-center gap-2">
-                    <input id="chatInput" type="text" class="flex-1 bg-transparent p-4 outline-none text-sm ml-4">
-                    <button onclick="sendToLumina()" class="w-14 h-14 bg-indigo-600 rounded-[2rem] flex items-center justify-center"><i class="fas fa-paper-plane"></i></button>
+                    <input id="chatInput" type="text" class="flex-1 bg-transparent p-4 outline-none text-sm ml-4" onkeypress="if(event.key==='Enter') sendToLumina()">
+                    <button onclick="sendToLumina()" class="w-14 h-14 bg-indigo-600 rounded-[2rem] flex items-center justify-center shadow-lg transition-transform active:scale-90"><i class="fas fa-paper-plane"></i></button>
                 </div>
             </div>
         </div>
     </main>
 
     <div id="promptModal" class="fixed inset-0 bg-black/95 z-[60] hidden p-6 flex items-center justify-center">
-        <div class="bg-[#0b0f1a] w-full max-w-3xl max-h-[85vh] overflow-hidden rounded-[3rem] border border-white/10 flex flex-col p-8">
+        <div class="bg-[#0b0f1a] w-full max-w-4xl max-h-[85vh] overflow-hidden rounded-[3rem] border border-white/10 flex flex-col p-8">
             <div class="flex justify-between items-center mb-6">
                 <h2 id="modalTitle" class="text-2xl font-black italic text-indigo-500 uppercase"></h2>
-                <button onclick="closeModal()" class="text-3xl text-slate-500">&times;</button>
+                <button onclick="closeModal()" class="text-3xl text-slate-500 hover:text-white transition-colors">&times;</button>
             </div>
             <div id="modalContent" class="flex-1 overflow-y-auto space-y-4 chat-scroll"></div>
         </div>
     </div>
 
 <script>
-    const translations = {
-        "pt-BR": { welcome: "Olá! Eu sou a Lumina. Como posso ajudar hoje?", placeholder: "Peça um prompt...", view: "VER 50 PROMPTS", analysis: "Analisei seu pedido sobre" },
-        "en-US": { welcome: "Hello! I am Lumina. How can I help you today?", placeholder: "Ask for a prompt...", view: "SEE 50 PROMPTS", analysis: "I analyzed your request about" },
-        "es-ES": { welcome: "¡Hola! Soy Lumina. ¿Cómo posso ajudar hoje?", placeholder: "Pide un prompt...", view: "VER 50 PROMPTS", analysis: "Analicé tu solicitud sobre" },
-        "fr-FR": { welcome: "Bonjour! Je suis Lumina. Comment puis-je vous aider?", placeholder: "Demandez un prompt...", view: "VOIR 50 PROMPTS", analysis: "J'ai analysé votre demande sur" },
-        "ja-JP": { welcome: "こんにちは！ルミナです。今日はどのようにお手伝いしましょうか？", placeholder: "プロンプトを依頼...", view: "50個のプロンプトを見る", analysis: "に関するリクエストを分析しました" },
-        "zh-CN": { welcome: "你好！我是 Lumina。今天我能为您提供什么帮助？", placeholder: "请求提示...", view: "查看 50 个提示符", analysis: "我分析了您关于其的请求" }
+    const langData = {
+        "pt-BR": { welcome: "Olá! Digite uma profissão e eu criarei o prompt.", analysis: "Prompt mestre gerado para", btnView: "VER 50 PROMPTS", copied: "Copiado!" },
+        "en-US": { welcome: "Hello! Type a profession and I'll create the prompt.", analysis: "Master prompt generated for", btnView: "VIEW 50 PROMPTS", copied: "Copied!" },
+        "es-ES": { welcome: "¡Hola! Escribe una profesión y crearé el prompt.", analysis: "Prompt maestro generado para", btnView: "VER 50 PROMPTS", copied: "Copiado!" },
+        "fr-FR": { welcome: "Bonjour! Tapez un métier et je créerai le prompt.", analysis: "Prompt maître généré pour", btnView: "VOIR 50 PROMPTS", copied: "Copié!" },
+        "ja-JP": { welcome: "こんにちは！職業を入力してください。", analysis: "生成されたプロンプト：", btnView: "50個のプロンプト", copied: "コピー完了！" },
+        "zh-CN": { welcome: "你好！输入职业，我将为您创建提示。", analysis: "生成的提示：", btnView: "查看 50 个提示", copied: "已复制！" }
     };
 
     let currentLang = "pt-BR";
 
     function updateLang() {
         currentLang = document.getElementById('langSelect').value;
-        const t = translations[currentLang];
-        document.getElementById('txt-welcome').innerText = t.welcome;
-        document.getElementById('chatInput').placeholder = t.placeholder;
+        document.getElementById('txt-welcome').innerText = langData[currentLang].welcome;
         renderDB();
+    }
+
+    function playSnd(id) {
+        const s = document.getElementById(id);
+        s.currentTime = 0; s.play().catch(() => {});
     }
 
     function speakText(text) {
         window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(text.replace(/volume up/gi, ""));
-        utterance.lang = currentLang;
-        window.speechSynthesis.speak(utterance);
+        const ut = new SpeechSynthesisUtterance(text.replace(/volume up|copy/gi, ""));
+        ut.lang = currentLang;
+        window.speechSynthesis.speak(ut);
     }
+
+    function copyMe(text, btn) {
+        navigator.clipboard.writeText(text);
+        const original = btn.innerHTML;
+        btn.innerHTML = `<i class="fas fa-check text-emerald-400"></i>`;
+        setTimeout(() => btn.innerHTML = original, 2000);
+    }
+
+    // Gerador de variações reais
+    const focusAreas = ["Estratégia Técnica", "Análise de Riscos", "Otimização de Fluxo", "Criação Criativa", "Gestão de Dados", "Liderança Sênior"];
+    const actionTasks = ["desenvolva um relatório detalhado", "crie um plano de 90 dias", "identifique falhas críticas", "elabore uma solução inovadora"];
 
     const professions = [
         { id: 1, icon: 'fa-terminal', name: 'Engenheiro de Prompt' }, { id: 2, icon: 'fa-apple-alt', name: 'Nutricionista' },
-        { id: 3, icon: 'fa-graduation-cap', name: 'Professor' }, { id: 4, icon: 'fa-code', name: 'Desenvolvedor' },
-        { id: 5, icon: 'fa-gavel', name: 'Advogado' }, { id: 6, icon: 'fa-chart-pie', name: 'Analista de Dados' },
-        { id: 7, icon: 'fa-bullhorn', name: 'Social Media' }, { id: 8, icon: 'fa-stethoscope', name: 'Médico' }
-        // ... (as outras 20 continuam aqui no código interno)
+        { id: 3, icon: 'fa-code', name: 'Desenvolvedor' }, { id: 4, icon: 'fa-gavel', name: 'Advogado' },
+        { id: 5, icon: 'fa-chart-pie', name: 'Analista de Dados' }, { id: 6, icon: 'fa-user-md', name: 'Médico' },
+        { id: 7, icon: 'fa-paint-brush', name: 'Designer' }, { id: 8, icon: 'fa-briefcase', name: 'Empresário' }
     ];
 
     function renderDB() {
         const grid = document.getElementById('grid');
-        const viewTxt = translations[currentLang].view;
         grid.innerHTML = professions.map(p => `
-            <div onclick="openPrompts(${p.id})" class="card-prof p-10 flex flex-col items-center text-center group">
-                <i class="fas ${p.icon} text-3xl text-indigo-500 mb-6 transition-all"></i>
+            <div onclick="playSnd('snd-click'); openPrompts(${p.id})" class="card-prof p-10 flex flex-col items-center text-center group">
+                <i class="fas ${p.icon} text-3xl text-indigo-500 mb-6 transition-all group-hover:scale-110"></i>
                 <h3 class="font-black uppercase text-[10px] tracking-widest">${p.name}</h3>
-                <p class="text-[8px] text-slate-500 mt-4 font-bold">${viewTxt}</p>
+                <p class="text-[8px] text-slate-500 mt-4 font-bold uppercase">${langData[currentLang].btnView}</p>
             </div>
         `).join('');
     }
@@ -133,11 +147,21 @@
         document.getElementById('modalTitle').innerText = prof.name;
         let html = "";
         for(let i=1; i<=50; i++) {
-            const txt = `Prompt #${i} - ${prof.name} Expert.`;
-            html += `<div class="bg-white/5 p-4 rounded-xl flex justify-between items-center">
-                <p class="text-[11px] text-slate-300 italic">${txt}</p>
-                <button onclick="speakText('${txt}')" class="text-indigo-400 p-2"><i class="fas fa-volume-up"></i></button>
-            </div>`;
+            const focus = focusAreas[i % focusAreas.length];
+            const task = actionTasks[i % actionTasks.length];
+            const pText = `Atue como um ${prof.name} Sênior especializado em ${focus}. Sua tarefa é ${task} considerando todas as variáveis de mercado e garantindo alta performance.`;
+            
+            html += `
+                <div class="bg-white/5 p-5 rounded-2xl border border-white/5 hover:border-indigo-500/50 transition-colors">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-[9px] font-black text-indigo-400 uppercase">Nível Master #${i}</span>
+                        <div class="flex gap-4">
+                            <i onclick="speakText('${pText}')" class="fas fa-volume-up btn-action"></i>
+                            <i onclick="copyMe('${pText}', this)" class="fas fa-copy btn-action"></i>
+                        </div>
+                    </div>
+                    <p class="text-xs text-slate-300 italic leading-relaxed">"${pText}"</p>
+                </div>`;
         }
         document.getElementById('modalContent').innerHTML = html;
         document.getElementById('promptModal').classList.remove('hidden');
@@ -148,19 +172,32 @@
         const box = document.getElementById('chatBox');
         if(!input.value.trim()) return;
 
-        const userMsg = input.value;
-        box.innerHTML += `<div class="flex justify-end"><div class="bg-indigo-600 p-4 rounded-3xl rounded-tr-none text-sm max-w-[80%]">${userMsg}</div></div>`;
+        playSnd('snd-click');
+        const val = input.value;
+        box.innerHTML += `<div class="flex justify-end"><div class="bg-indigo-600 p-4 rounded-2xl rounded-tr-none text-sm max-w-[80%]">${val}</div></div>`;
         input.value = "";
+        box.scrollTop = box.scrollHeight;
 
         setTimeout(() => {
-            const t = translations[currentLang];
-            const response = `${t.analysis} "${userMsg}". Aqui está um comando mestre: Atue como especialista sênior.`;
+            playSnd('snd-msg');
+            const d = langData[currentLang];
+            const constructed = `Atue como um especialista em ${val}. Sua missão é realizar uma análise profunda e propor uma solução técnica estruturada focada em otimização e escalabilidade para o setor de ${val}.`;
+            
             box.innerHTML += `
                 <div class="flex gap-4">
-                    <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shrink-0"><i class="fas fa-robot text-white text-xs"></i></div>
-                    <div class="bg-white/10 p-6 rounded-[2rem] rounded-tl-none text-sm max-w-[85%] relative border border-white/5">
-                        ${response}
-                        <div onclick="speakText('${response}')" class="absolute -right-10 top-4 voice-btn text-indigo-400"><i class="fas fa-volume-up"></i></div>
+                    <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shrink-0 shadow-lg"><i class="fas fa-robot text-white text-xs"></i></div>
+                    <div class="bg-white/10 p-6 rounded-[3rem] rounded-tl-none text-sm max-w-[85%] border border-white/10 relative">
+                        ${d.analysis} <strong>${val}</strong>:
+                        <div class="prompt-box">
+                            <div class="flex justify-between items-center mb-3">
+                                <span class="text-[9px] font-black text-indigo-500 uppercase">Prompt Customizado</span>
+                                <div class="flex gap-4">
+                                    <i onclick="speakText('${constructed}')" class="fas fa-volume-up btn-action"></i>
+                                    <i onclick="copyMe('${constructed}', this)" class="fas fa-copy btn-action"></i>
+                                </div>
+                            </div>
+                            "${constructed}"
+                        </div>
                     </div>
                 </div>`;
             box.scrollTop = box.scrollHeight;
@@ -180,7 +217,7 @@
     };
 
     function closeModal() { document.getElementById('promptModal').classList.add('hidden'); }
-    function initAudio() { /* Unlock audio context */ }
+    function initAudio() { }
 </script>
 </body>
 </html>
