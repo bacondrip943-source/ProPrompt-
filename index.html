@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Promptlandia 2026 - Multilingual Hub</title>
+    <title>Promptlandia 2026 - Global AI Hub</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -14,11 +14,13 @@
         .character-push { animation: push-effort 1.2s ease-in-out infinite; display: inline-block; }
         .gear-rotate { animation: gear-spin 3s linear infinite; display: inline-block; }
         .loader-hidden { opacity: 0; visibility: hidden; transition: 0.8s; }
-        .glass { background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.05); }
-        .chat-container { height: calc(100vh - 200px); }
+        
+        .glass { background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.08); }
+        .chat-container { height: calc(100vh - 240px); }
         .sidebar-chat { transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); transform: translateX(-100%); }
         .sidebar-chat.open { transform: translateX(0); }
-        ::-webkit-scrollbar { width: 4px; }
+        
+        ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-thumb { background: #6366f1; border-radius: 10px; }
     </style>
 </head>
@@ -29,178 +31,233 @@
             <div class="character-push text-7xl text-indigo-500"><i class="fas fa-walking"></i></div>
             <div class="gear-rotate text-8xl text-slate-100"><i class="fas fa-cog"></i></div>
         </div>
-        <h2 class="text-2xl font-black italic tracking-widest animate-pulse">PROMPTLANDIA</h2>
+        <h2 class="text-2xl font-black italic tracking-[0.3em] animate-pulse">PROMPTLANDIA</h2>
     </div>
 
-    <nav class="fixed top-0 w-full z-40 glass p-4 flex justify-between items-center px-6 md:px-12">
-        <div class="flex items-center gap-4">
-            <button onclick="toggleSidebar()" class="text-xl hover:text-indigo-500 transition-colors">
-                <i class="fas fa-bars"></i>
-            </button>
-            <h1 class="text-xl font-black italic tracking-tighter hidden lg:block">PROMPTLANDIA</h1>
+    <nav class="fixed top-0 w-full z-40 glass p-4 flex justify-between items-center px-4 md:px-10">
+        <div class="flex items-center gap-3">
+            <button onclick="toggleSidebar()" class="text-xl p-2 hover:text-indigo-500"><i class="fas fa-bars"></i></button>
+            <h1 class="text-xl font-extrabold italic hidden sm:block tracking-tighter text-indigo-500">PROMPTLANDIA</h1>
         </div>
         
-        <div class="flex items-center gap-3">
-            <select id="langSelect" onchange="changeLang()" class="bg-slate-900 border border-white/10 text-[10px] font-bold rounded-lg px-2 py-2 outline-none focus:border-indigo-500">
+        <div class="flex items-center gap-2">
+            <select id="langSelect" onchange="changeLang()" class="bg-slate-900 border border-white/10 text-[10px] font-bold rounded-xl px-2 py-2 outline-none">
                 <option value="pt">PT 🇧🇷</option>
                 <option value="en">EN 🇺🇸</option>
                 <option value="es">ES 🇪🇸</option>
                 <option value="fr">FR 🇫🇷</option>
+                <option value="jp">JP 🇯🇵</option>
+                <option value="zh">ZH 🇨🇳</option>
             </select>
-
+            <button onclick="switchTab('ia')" id="btn-ia" class="text-[10px] font-bold px-4 py-2 rounded-xl bg-indigo-600 shadow-lg shadow-indigo-500/30 uppercase">IA Chat</button>
             <button onclick="switchTab('db')" id="btn-db" class="text-[10px] font-bold px-4 py-2 rounded-xl bg-slate-900 border border-white/5 uppercase">Database</button>
-            <button onclick="switchTab('ia')" id="btn-ia" class="text-[10px] font-bold px-4 py-2 rounded-xl bg-indigo-600 uppercase">IA Chat</button>
-            
-            <button onclick="openAuthModal()" id="userBtn" class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center border border-indigo-500/30">
-                <i class="fas fa-user-circle text-lg"></i>
-            </button>
+            <button onclick="openAuthModal()" id="userBtn" class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center border border-indigo-500/30"><i class="fas fa-user text-sm"></i></button>
         </div>
     </nav>
 
-    <aside id="chatSidebar" class="fixed top-0 left-0 h-full w-72 bg-slate-900 z-50 border-r border-white/10 sidebar-chat p-6 pt-24">
-        <h3 id="txt-hist" class="font-black italic text-xs text-indigo-400 tracking-widest mb-6">HISTÓRICO</h3>
-        <div id="sidebarUser" class="mb-6 p-4 rounded-2xl bg-indigo-500/5 border border-indigo-500/10 hidden">
-            <p id="displayEmail" class="text-xs font-medium truncate text-indigo-300"></p>
+    <aside id="chatSidebar" class="fixed top-0 left-0 h-full w-72 bg-slate-950/95 z-50 border-r border-white/10 sidebar-chat p-6 pt-24">
+        <h3 id="txt-hist" class="font-black text-[10px] text-indigo-400 mb-6 tracking-widest uppercase">Histórico Cloud</h3>
+        <div id="sidebarUser" class="mb-4 p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20 hidden">
+            <p id="displayEmail" class="text-[10px] truncate text-indigo-200 font-bold"></p>
         </div>
-        <button onclick="newChat()" id="btn-newchat" class="w-full p-4 rounded-2xl border border-dashed border-indigo-500/30 text-indigo-400 text-[10px] font-black mb-6 hover:bg-indigo-500/5 transition-all">
-            + NOVO CHAT
-        </button>
-        <div id="chatHistory" class="space-y-3 overflow-y-auto max-h-[60vh]"></div>
+        <button onclick="newChat()" id="btn-newchat" class="w-full p-4 rounded-xl border border-dashed border-indigo-500/30 text-indigo-400 text-[10px] font-black mb-4 hover:bg-indigo-500/5">+ NOVO CHAT</button>
+        <div id="chatHistory" class="space-y-2 overflow-y-auto max-h-[50vh]"></div>
+        <button onclick="logout()" id="btnLogout" class="hidden mt-6 w-full p-3 text-[10px] text-red-400 font-bold border border-red-500/10 rounded-xl uppercase">Sair</button>
     </aside>
 
     <div id="authModal" class="fixed inset-0 z-[70] bg-black/90 hidden flex items-center justify-center p-6">
-        <div class="bg-slate-900 w-full max-w-md p-8 rounded-[2.5rem] border border-white/10 relative">
+        <div class="bg-slate-900 w-full max-w-sm p-8 rounded-[2.5rem] border border-white/10 relative">
             <button onclick="closeAuthModal()" class="absolute top-6 right-8 text-2xl text-slate-500">&times;</button>
-            <h2 id="txt-auth-title" class="text-3xl font-black italic mb-2">CRIAR CONTA</h2>
-            <p id="txt-auth-desc" class="text-slate-400 text-sm mb-8">Salve seus dados na nuvem.</p>
-            <input id="authEmail" type="email" placeholder="E-mail" class="w-full p-4 bg-slate-950 rounded-2xl border border-white/5 mb-4 outline-none focus:border-indigo-500">
-            <button onclick="handleAuth()" id="btn-auth" class="w-full bg-indigo-600 py-4 rounded-2xl font-black text-sm uppercase">Cadastrar</button>
+            <h2 id="authTitle" class="text-2xl font-black italic mb-2">CONTA CLOUD</h2>
+            <p class="text-slate-400 text-xs mb-8">Aceda aos seus prompts em qualquer lugar.</p>
+            <input id="authEmail" type="email" placeholder="E-mail" class="w-full p-4 bg-slate-950 rounded-2xl border border-white/5 mb-3 outline-none">
+            <input id="authPass" type="password" placeholder="Senha" class="w-full p-4 bg-slate-950 rounded-2xl border border-white/5 mb-6 outline-none">
+            <div class="flex gap-2">
+                <button onclick="handleAuth('login')" class="flex-1 bg-slate-800 py-4 rounded-2xl font-black text-[10px] uppercase">Entrar</button>
+                <button onclick="handleAuth('register')" class="flex-1 bg-indigo-600 py-4 rounded-2xl font-black text-[10px] uppercase">Cadastrar</button>
+            </div>
         </div>
     </div>
 
-    <main id="view-db" class="pt-32 pb-20 px-6 md:px-12 max-w-7xl mx-auto">
-        <div class="relative mb-12">
-            <i class="fas fa-search absolute left-6 top-1/2 -translate-y-1/2 text-indigo-500"></i>
-            <input id="search" oninput="renderDB()" type="text" placeholder="..." class="w-full p-5 pl-14 rounded-2xl bg-slate-900 border border-white/5 outline-none">
-        </div>
-        <div class="grid md:grid-cols-3 gap-6" id="grid"></div>
-    </main>
-
-    <main id="view-ia" class="hidden pt-32 pb-10 px-4 md:px-12 max-w-5xl mx-auto">
-        <div class="glass rounded-[3rem] flex flex-col chat-container overflow-hidden">
-            <div id="chatMessages" class="flex-1 overflow-y-auto p-8 space-y-6"></div>
-            <div class="p-6 bg-slate-900/40 border-t border-white/5">
-                <div class="flex gap-3 bg-slate-950 p-2 rounded-2xl border border-white/10">
-                    <input id="chatInput" type="text" class="flex-1 bg-transparent p-3 outline-none text-sm px-4">
-                    <button onclick="sendMessage()" class="bg-indigo-600 w-12 h-12 rounded-xl flex items-center justify-center"><i class="fas fa-paper-plane"></i></button>
+    <main id="view-ia" class="pt-28 pb-10 px-4 md:px-12 max-w-4xl mx-auto">
+        <div class="glass rounded-[2.5rem] flex flex-col chat-container overflow-hidden shadow-2xl">
+            <div id="chatMessages" class="flex-1 overflow-y-auto p-6 space-y-6">
+                <div class="flex gap-4">
+                    <div class="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center shrink-0 shadow-lg shadow-indigo-500/40"><i class="fas fa-robot text-sm"></i></div>
+                    <div id="welcome-msg" class="bg-slate-800/40 p-5 rounded-3xl rounded-tl-none text-sm border border-white/5 max-w-[85%]">...</div>
+                </div>
+            </div>
+            <div class="p-4 bg-slate-900/50 border-t border-white/5">
+                <div class="flex gap-2 bg-slate-950 p-2 rounded-2xl border border-white/10">
+                    <input id="chatInput" type="text" class="flex-1 bg-transparent p-3 outline-none text-sm px-4" onkeypress="if(event.key==='Enter') sendMessage()">
+                    <button onclick="sendMessage()" class="bg-indigo-600 w-12 h-12 rounded-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all"><i class="fas fa-paper-plane"></i></button>
                 </div>
             </div>
         </div>
     </main>
 
+    <main id="view-db" class="hidden pt-28 pb-20 px-4 md:px-12 max-w-7xl mx-auto">
+        <div class="flex flex-col md:flex-row gap-4 mb-10">
+            <div class="relative flex-1">
+                <i class="fas fa-search absolute left-5 top-1/2 -translate-y-1/2 text-indigo-500"></i>
+                <input id="search" oninput="renderDB()" type="text" class="w-full p-5 pl-14 rounded-2xl bg-slate-900 border border-white/5 outline-none focus:border-indigo-500 transition-all">
+            </div>
+            <button onclick="randomPrompt()" class="bg-indigo-600 px-8 py-5 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-500/20">
+                <i class="fas fa-dice mr-2"></i> Aleatório
+            </button>
+        </div>
+        <div id="grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+    </main>
+
+    <div id="modalList" class="fixed inset-0 bg-black/95 hidden z-[80] flex justify-end">
+        <div class="bg-slate-950 w-full max-w-2xl h-full p-8 overflow-y-auto border-l border-indigo-500/20">
+            <button onclick="closeList()" class="text-slate-400 hover:text-white mb-8 flex items-center font-bold text-sm uppercase tracking-widest"><i class="fas fa-chevron-left mr-3"></i> Voltar</button>
+            <h2 id="listTitle" class="text-4xl font-black italic uppercase text-indigo-500 mb-10 tracking-tighter"></h2>
+            <div id="promptContainer" class="space-y-6"></div>
+        </div>
+    </div>
+
 <script>
+    // DADOS MULTILINGUES (Com Japonês e Chinês)
     const langData = {
-        pt: {
-            db: "Database", ia: "IA Chat", hist: "HISTÓRICO", newChat: "+ NOVO CHAT",
-            authTitle: "CRIAR CONTA", authDesc: "Salve seus dados na nuvem.", authBtn: "Cadastrar",
-            search: "Pesquisar profissão...", welcome: "Bem-vindo à Promptlandia!",
-            placeholder: "Digite sua dúvida...", processing: "Processando...", copy: "COPIAR"
-        },
-        en: {
-            db: "Database", ia: "AI Chat", hist: "HISTORY", newChat: "+ NEW CHAT",
-            authTitle: "CREATE ACCOUNT", authDesc: "Save your data in the cloud.", authBtn: "Sign Up",
-            search: "Search profession...", welcome: "Welcome to Promptlandia!",
-            placeholder: "Type your question...", processing: "Processing...", copy: "COPY"
-        },
-        es: {
-            db: "Base de Datos", ia: "IA Chat", hist: "HISTORIAL", newChat: "+ NUEVO CHAT",
-            authTitle: "CREAR CUENTA", authDesc: "Guarda tus datos en la nube.", authBtn: "Registrarse",
-            search: "Buscar profesión...", welcome: "¡Bienvenido a Promptlandia!",
-            placeholder: "Escribe tu duda...", processing: "Procesando...", copy: "COPIAR"
-        },
-        fr: {
-            db: "Base de données", ia: "IA Chat", hist: "HISTORIQUE", newChat: "+ NOUVEAU CHAT",
-            authTitle: "CRÉER UN COMPTE", authDesc: "Enregistrez vos données sur le cloud.", authBtn: "S'inscrire",
-            search: "Rechercher une profession...", welcome: "Bienvenue à Promptlandia!",
-            placeholder: "Tapez votre question...", processing: "Traitement...", copy: "COPIER"
-        }
+        pt: { welcome: "Olá! Sou a IA da Promptlandia. Em que posso ajudar hoje?", placeholder: "Escreve aqui a tua dúvida...", search: "Pesquisar profissões...", copy: "COPIAR", random: "ALEATÓRIO", processing: "A processar...", hist: "HISTÓRICO CLOUD" },
+        en: { welcome: "Hello! I am Promptlandia AI. How can I help you today?", placeholder: "Type your question here...", search: "Search professions...", copy: "COPY", random: "RANDOM", processing: "Processing...", hist: "CLOUD HISTORY" },
+        es: { welcome: "¡Hola! Soy la IA de Promptlandia. ¿Cómo posso ayudarte hoy?", placeholder: "Escribe tu duda aquí...", search: "Buscar profesiones...", copy: "COPIAR", random: "ALEATORIO", processing: "Procesando...", hist: "HISTORIAL CLOUD" },
+        fr: { welcome: "Bonjour! Je suis l'IA de Promptlandia. Comment puis-je vous aider?", placeholder: "Tapez votre question ici...", search: "Rechercher...", copy: "COPIER", random: "ALÉATOIRE", processing: "Traitement...", hist: "HISTORIQUE CLOUD" },
+        jp: { welcome: "こんにちは！Promptlandia AIです。何かお手伝いしましょうか？", placeholder: "ここに質問を入力してください...", search: "職業を検索...", copy: "コピー", random: "ランダム", processing: "処理中...", hist: "クラウド履歴" },
+        zh: { welcome: "你好！我是 Promptlandia AI。今天我能帮你什么？", placeholder: "在这里输入你的问题...", search: "搜索职业...", copy: "复制", random: "随机", processing: "正在处理...", hist: "云端历史" }
     };
 
+    const dbItems = [
+        { id: 0, icon: "fa-terminal", pt: "Engenheiro de Prompt", en: "Prompt Engineer", es: "Ingeniero", fr: "Ingénieur", jp: "プロンプトエンジニア", zh: "提示工程师", prompts: ["Crie um prompt para análise de SEO.", "Refine este prompt para marketing."] },
+        { id: 1, icon: "fa-apple-alt", pt: "Nutricionista", en: "Nutritionist", es: "Nutricionista", fr: "Nutritionniste", jp: "栄養士", zh: "营养师", prompts: ["Dieta de 2000 kcal.", "Substitutos para açúcar."] },
+        { id: 2, icon: "fa-graduation-cap", pt: "Professor", en: "Teacher", es: "Profesor", fr: "Professeur", jp: "教師", zh: "老师", prompts: ["Plano de aula BNCC.", "Atividade lúdica."] }
+        // ... (as outras profissões seguem este padrão)
+    ];
+
     let currentLang = 'pt';
+    let userAccount = JSON.parse(localStorage.getItem('promptlandia_user')) || null;
+    let chats = JSON.parse(localStorage.getItem('promptlandia_history')) || [];
+
+    // CONTROLO DE INTERFACE
+    window.addEventListener("load", () => {
+        setTimeout(() => document.getElementById("loader").classList.add("loader-hidden"), 2500);
+        changeLang();
+        checkSession();
+        renderHistory();
+    });
 
     function changeLang() {
         currentLang = document.getElementById('langSelect').value;
         const t = langData[currentLang];
-        
-        document.getElementById('btn-db').innerText = t.db;
-        document.getElementById('btn-ia').innerText = t.ia;
-        document.getElementById('txt-hist').innerText = t.hist;
-        document.getElementById('btn-newchat').innerText = t.newChat;
-        document.getElementById('txt-auth-title').innerText = t.authTitle;
-        document.getElementById('txt-auth-desc').innerText = t.authDesc;
-        document.getElementById('btn-auth').innerText = t.authBtn;
-        document.getElementById('search').placeholder = t.search;
+        document.getElementById('welcome-msg').innerText = t.welcome;
         document.getElementById('chatInput').placeholder = t.placeholder;
-        
+        document.getElementById('search').placeholder = t.search;
+        document.getElementById('txt-hist').innerText = t.hist;
         renderDB();
     }
-
-    // DATABASE COM AS 28 PROFISSÕES (Exemplo reduzido para o código caber, mas a lógica de renderização é completa)
-    const dbItems = [
-        { pt: "Engenheiro de Prompt", en: "Prompt Engineer", es: "Ingeniero de Prompts", fr: "Ingénieur de Prompt", icon: "fa-terminal" },
-        { pt: "Nutricionista", en: "Nutritionist", es: "Nutricionista", fr: "Nutritionniste", icon: "fa-apple-alt" },
-        { pt: "Professor BNCC", en: "BNCC Teacher", es: "Profesor BNCC", fr: "Professeur BNCC", icon: "fa-graduation-cap" }
-        // ... As outras 25 profissões entram aqui seguindo o mesmo padrão multilingue
-    ];
-
-    function renderDB() {
-        const grid = document.getElementById('grid');
-        grid.innerHTML = dbItems.map(p => `
-            <div class="bg-slate-900/50 p-8 rounded-[2.5rem] border border-white/5 hover:border-indigo-500/50 transition-all cursor-pointer">
-                <i class="fas ${p.icon} text-3xl text-indigo-500 mb-6"></i>
-                <h3 class="font-black italic uppercase text-lg">${p[currentLang]}</h3>
-            </div>`).join('');
-    }
-
-    // FUNÇÕES DE SISTEMA (REPETIDAS DOS SCRIPTS ANTERIORES)
-    window.addEventListener("load", () => {
-        setTimeout(() => document.getElementById("loader").classList.add("loader-hidden"), 2500);
-        changeLang();
-    });
 
     function switchTab(tab) {
         document.getElementById('view-db').classList.toggle('hidden', tab !== 'db');
         document.getElementById('view-ia').classList.toggle('hidden', tab !== 'ia');
+        document.getElementById('btn-ia').classList.toggle('bg-indigo-600', tab === 'ia');
+        document.getElementById('btn-db').classList.toggle('bg-indigo-600', tab === 'db');
     }
 
-    function toggleSidebar() { document.getElementById('chatSidebar').classList.toggle('open'); }
-    function openAuthModal() { document.getElementById('authModal').classList.remove('hidden'); }
-    function closeAuthModal() { document.getElementById('authModal').classList.add('hidden'); }
+    function renderDB() {
+        const query = document.getElementById('search').value.toLowerCase();
+        const grid = document.getElementById('grid');
+        grid.innerHTML = dbItems.filter(p => p[currentLang].toLowerCase().includes(query)).map(p => `
+            <div onclick="openList(${p.id})" class="bg-slate-900/50 p-8 rounded-[2.5rem] border border-white/5 hover:border-indigo-500/40 transition-all cursor-pointer shadow-xl group">
+                <i class="fas ${p.icon} text-3xl text-indigo-500 mb-6 group-hover:scale-110 transition-transform"></i>
+                <h3 class="font-black italic uppercase text-lg tracking-tighter">${p[currentLang]}</h3>
+                <p class="text-[10px] text-slate-500 mt-2 font-bold uppercase tracking-widest">Ver Base →</p>
+            </div>`).join('');
+    }
 
+    function openList(id) {
+        const item = dbItems.find(p => p.id === id);
+        document.getElementById('listTitle').innerText = item[currentLang];
+        document.getElementById('promptContainer').innerHTML = item.prompts.map(p => `
+            <div class="p-6 bg-slate-900/80 border border-white/5 rounded-[2rem] shadow-2xl">
+                <p class="text-sm italic text-slate-300 mb-6 leading-relaxed">"${p}"</p>
+                <button onclick="copyText('${p}', this)" class="w-full bg-indigo-600 py-3 rounded-xl text-[10px] font-black uppercase hover:bg-indigo-500 transition-all">COPIAR PROMPT</button>
+            </div>`).join('');
+        document.getElementById('modalList').classList.remove('hidden');
+    }
+
+    function randomPrompt() {
+        const randomItem = dbItems[Math.floor(Math.random() * dbItems.length)];
+        openList(randomItem.id);
+    }
+
+    function copyText(text, btn) {
+        navigator.clipboard.writeText(text);
+        const t = langData[currentLang];
+        const oldText = btn.innerText;
+        btn.innerText = t.copy + " ✔";
+        btn.classList.replace('bg-indigo-600', 'bg-emerald-600');
+        setTimeout(() => { btn.innerText = oldText; btn.classList.replace('bg-emerald-600', 'bg-indigo-600'); }, 1500);
+    }
+
+    // SISTEMA DE IA & CHAT
     function sendMessage() {
         const input = document.getElementById('chatInput');
         const box = document.getElementById('chatMessages');
         if(!input.value.trim()) return;
 
-        box.innerHTML += `<div class="flex justify-end"><div class="bg-indigo-600 p-4 rounded-3xl text-sm max-w-[80%]">${input.value}</div></div>`;
-        const t = langData[currentLang];
+        const userMsg = input.value;
+        box.innerHTML += `<div class="flex justify-end"><div class="bg-indigo-600 p-5 rounded-3xl rounded-tr-none text-sm max-w-[80%] shadow-xl">${userMsg}</div></div>`;
+        
         setTimeout(() => {
-            box.innerHTML += `<div class="flex gap-4"><div class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center shrink-0"><i class="fas fa-robot text-xs"></i></div><div class="bg-slate-800/40 p-5 rounded-3xl text-sm max-w-[80%] italic text-slate-400">${t.processing}</div></div>`;
+            box.innerHTML += `<div class="flex gap-4"><div class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center shrink-0 border border-white/5"><i class="fas fa-robot text-xs"></i></div><div class="bg-slate-800/40 p-5 rounded-3xl rounded-tl-none text-sm border border-white/5 text-slate-400 italic">${langData[currentLang].processing}</div></div>`;
             box.scrollTop = box.scrollHeight;
+            saveChat(userMsg);
         }, 800);
         input.value = "";
     }
 
-    function handleAuth() {
+    // CONTA & CLOUD
+    function handleAuth(type) {
         const email = document.getElementById('authEmail').value;
-        if(email.includes('@')) {
-            localStorage.setItem('promptlandia_user', JSON.stringify({email}));
+        const pass = document.getElementById('authPass').value;
+        if(!email.includes('@') || pass.length < 4) return alert("Dados inválidos!");
+        userAccount = { email, pass };
+        localStorage.setItem('promptlandia_user', JSON.stringify(userAccount));
+        checkSession();
+        closeAuthModal();
+    }
+
+    function checkSession() {
+        if(userAccount) {
             document.getElementById('sidebarUser').classList.remove('hidden');
-            document.getElementById('displayEmail').innerText = email;
-            closeAuthModal();
-            alert("Success!");
+            document.getElementById('btnLogout').classList.remove('hidden');
+            document.getElementById('displayEmail').innerText = userAccount.email;
+            document.getElementById('userBtn').innerHTML = `<span class="text-xs font-black">${userAccount.email[0].toUpperCase()}</span>`;
+            document.getElementById('userBtn').classList.add('bg-indigo-600');
         }
     }
+
+    function saveChat(txt) {
+        chats.unshift({ title: txt.substring(0, 25) + "...", date: new Date().toLocaleTimeString() });
+        localStorage.setItem('promptlandia_history', JSON.stringify(chats));
+        renderHistory();
+    }
+
+    function renderHistory() {
+        document.getElementById('chatHistory').innerHTML = chats.map(c => `
+            <div class="p-4 bg-slate-900 border border-white/5 rounded-2xl text-[10px] font-bold hover:border-indigo-500/50 cursor-pointer transition-all">
+                ${c.title} <span class="block opacity-30 mt-1 font-normal">${c.date}</span>
+            </div>`).join('');
+    }
+
+    function logout() { localStorage.removeItem('promptlandia_user'); location.reload(); }
+    function toggleSidebar() { document.getElementById('chatSidebar').classList.toggle('open'); }
+    function openAuthModal() { document.getElementById('authModal').classList.remove('hidden'); }
+    function closeAuthModal() { document.getElementById('authModal').classList.add('hidden'); }
+    function closeList() { document.getElementById('modalList').classList.add('hidden'); }
+    function newChat() { document.getElementById('chatMessages').innerHTML = ""; toggleSidebar(); }
 </script>
 </body>
-</html>
+                </html>
+                
