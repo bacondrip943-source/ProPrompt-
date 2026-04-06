@@ -1,9 +1,11 @@
+
+    
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Promptlandia - Biblioteca de IA</title>
+    <title>Promptlandia AI Engine</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -12,158 +14,195 @@
         .gear-spin { animation: rotate 4s linear infinite; }
         .char-float { animation: float 3s ease-in-out infinite; }
         .loader-hidden { opacity: 0; visibility: hidden; transition: 0.5s; pointer-events: none; }
-        body { scroll-behavior: smooth; }
+        .glass { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(12px); }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: #6366f1; border-radius: 10px; }
     </style>
 </head>
-<body class="bg-gray-950 text-white min-h-screen font-sans">
+<body class="bg-slate-950 text-white min-h-screen font-sans overflow-x-hidden">
 
-    <div id="loader" class="fixed inset-0 bg-gray-950 z-[100] flex flex-col items-center justify-center">
+    <div id="loader" class="fixed inset-0 bg-slate-950 z-[100] flex flex-col items-center justify-center">
         <div class="relative w-40 h-40 flex items-center justify-center">
-            <i class="fas fa-cog text-gray-800 text-9xl gear-spin absolute"></i>
-            <i class="fas fa-user-astronaut text-blue-500 text-5xl char-float absolute"></i>
+            <i class="fas fa-cog text-slate-800 text-9xl gear-spin absolute"></i>
+            <i class="fas fa-user-astronaut text-indigo-500 text-5xl char-float absolute"></i>
         </div>
-        <p class="mt-8 text-blue-400 font-bold animate-pulse tracking-widest text-sm">PREPARANDO AMBIENTE...</p>
+        <p class="mt-8 text-indigo-400 font-bold animate-pulse tracking-widest text-sm">CONECTANDO AO CÉREBRO IA...</p>
     </div>
 
     <div class="max-w-7xl mx-auto p-6">
-        <header class="mb-10 flex flex-col lg:flex-row lg:justify-between lg:items-end gap-6">
+        <header class="mb-12 flex flex-col lg:flex-row lg:justify-between lg:items-center gap-6">
             <div>
-                <h1 class="text-5xl font-black bg-gradient-to-r from-blue-400 via-indigo-500 to-purple-500 bg-clip-text text-transparent italic tracking-tighter">
-                    PROMPTLANDIA
+                <h1 class="text-5xl font-black bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent italic tracking-tighter">
+                    PROMPTLANDIA <span class="text-white text-xs not-italic font-bold bg-indigo-600 px-2 py-1 rounded-lg ml-2">AI ENGINE</span>
                 </h1>
-                <p class="text-gray-500 font-medium mt-2">Biblioteca gratuita de prompts profissionais para todos.</p>
+                <p class="text-slate-500 font-medium mt-2">Gere prompts infinitos com IA e organize sua biblioteca.</p>
             </div>
-            <div class="flex flex-wrap gap-3">
-                <button onclick="inspireMe()" class="bg-indigo-600 hover:bg-indigo-500 px-6 py-3 rounded-2xl font-bold transition-all shadow-lg flex items-center gap-2">
-                    <i class="fas fa-dice"></i> Modo Inspirar
+            
+            <div class="flex gap-3">
+                <button onclick="openAIGenerator()" class="bg-indigo-600 hover:bg-indigo-500 px-6 py-4 rounded-2xl font-bold transition-all shadow-lg flex items-center gap-2 border-b-4 border-indigo-800 active:border-b-0 active:translate-y-1">
+                    <i class="fas fa-robot"></i> CRIAR COM IA
                 </button>
-                <button onclick="document.getElementById('modalAdd').classList.remove('hidden')" class="bg-gray-800 hover:bg-gray-700 px-6 py-3 rounded-2xl font-bold transition-all border border-gray-700 flex items-center gap-2">
-                    <i class="fas fa-plus text-green-400"></i> Novo Prompt
+                <button onclick="openSavedLibrary()" class="bg-slate-800 hover:bg-slate-700 px-6 py-4 rounded-2xl font-bold transition-all flex items-center gap-2 border border-slate-700 shadow-xl">
+                    <i class="fas fa-folder-open text-yellow-400"></i> MEUS SALVOS
                 </button>
             </div>
         </header>
         
         <div class="relative mb-12">
-            <i class="fas fa-search absolute left-5 top-1/2 -translate-y-1/2 text-gray-500 text-xl"></i>
-            <input id="search" oninput="render()" type="text" placeholder="Pesquise por uma profissão ou tema..." 
-                class="w-full p-6 pl-16 rounded-3xl bg-gray-900 border border-gray-800 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all text-xl shadow-inner">
+            <i class="fas fa-search absolute left-6 top-1/2 -translate-y-1/2 text-slate-500 text-xl"></i>
+            <input id="search" oninput="render()" type="text" placeholder="Procure uma pasta de profissão..." 
+                class="w-full p-6 pl-16 rounded-[2rem] bg-slate-900 border border-slate-800 focus:border-indigo-500 outline-none transition-all text-xl shadow-inner shadow-black">
         </div>
 
         <div id="grid" class="grid md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
     </div>
 
-    <div id="modalCompare" class="fixed inset-0 bg-black/90 backdrop-blur-md hidden flex items-center justify-center p-4 z-50">
-        <div class="bg-gray-900 border border-gray-800 w-full max-w-5xl max-h-[90vh] overflow-y-auto rounded-3xl p-8">
-            <div class="flex justify-between items-center mb-8 border-b border-gray-800 pb-4">
-                <h2 class="text-2xl font-bold flex items-center gap-3"><i class="fas fa-robot text-indigo-400"></i> Comportamento dos Modelos</h2>
-                <button onclick="closeCompare()" class="text-gray-500 hover:text-white text-3xl">&times;</button>
-            </div>
-            <div class="grid md:grid-cols-3 gap-6" id="compare-content">
+    <div id="modalList" class="fixed inset-0 bg-black/90 backdrop-blur-md hidden z-50 flex justify-end">
+        <div class="bg-slate-900 w-full max-w-2xl h-full shadow-2xl p-8 overflow-y-auto border-l border-slate-800">
+            <div class="flex justify-between items-center mb-8 border-b border-slate-800 pb-6">
+                <div>
+                    <h2 id="listTitle" class="text-3xl font-black text-white italic"></h2>
+                    <p class="text-indigo-400 text-sm font-bold uppercase tracking-widest mt-1">Biblioteca de Prompts</p>
                 </div>
+                <button onclick="closeList()" class="text-slate-500 hover:text-white text-4xl">&times;</button>
+            </div>
+            <div id="promptContainer" class="space-y-6"></div>
         </div>
     </div>
 
-    <div id="modalAdd" class="fixed inset-0 bg-black/80 hidden flex items-center justify-center z-50 p-4">
-        <div class="bg-gray-900 p-8 rounded-3xl border border-gray-800 w-full max-w-md shadow-2xl">
-            <h2 class="text-2xl font-bold mb-6 text-indigo-400">Adicionar à Biblioteca</h2>
-            <div class="space-y-4">
-                <input id="newName" type="text" placeholder="Nome da Profissão/Título" class="w-full p-4 rounded-xl bg-gray-800 border border-gray-700 outline-none focus:border-indigo-500 transition-all">
-                <textarea id="newPrompt" rows="4" placeholder="Escreva o seu prompt aqui..." class="w-full p-4 rounded-xl bg-gray-800 border border-gray-700 outline-none focus:border-indigo-500 transition-all"></textarea>
-                <div class="flex gap-2">
-                    <button onclick="saveNewPrompt()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 py-4 rounded-xl font-bold transition-all shadow-lg">Salvar</button>
-                    <button onclick="document.getElementById('modalAdd').classList.add('hidden')" class="flex-1 bg-gray-800 hover:bg-gray-700 py-4 rounded-xl font-bold">Cancelar</button>
-                </div>
+    <div id="modalAI" class="fixed inset-0 bg-black/95 backdrop-blur-xl hidden z-[60] flex items-center justify-center p-4">
+        <div class="bg-slate-900 w-full max-w-lg p-8 rounded-[3rem] border border-indigo-500/30 shadow-[0_0_50px_rgba(79,70,229,0.2)]">
+            <div class="text-center mb-8">
+                <i class="fas fa-brain text-5xl text-indigo-500 mb-4 char-float inline-block"></i>
+                <h2 class="text-3xl font-bold">Cérebro IA</h2>
+                <p class="text-slate-400 mt-2">Qual profissão você quer criar agora?</p>
+            </div>
+            <input id="aiInput" type="text" placeholder="Ex: Astronauta, YouTuber, Dog Walker..." class="w-full p-5 rounded-2xl bg-slate-800 border border-slate-700 outline-none focus:ring-2 focus:ring-indigo-500 text-lg mb-6">
+            <div class="flex gap-3">
+                <button onclick="generateAIProfession()" class="flex-1 bg-indigo-600 py-5 rounded-2xl font-black text-lg shadow-lg hover:bg-indigo-500 transition-all">GERAR PASTA COMPLETA</button>
+                <button onclick="document.getElementById('modalAI').classList.add('hidden')" class="px-6 bg-slate-800 rounded-2xl font-bold text-slate-400">Sair</button>
             </div>
         </div>
     </div>
 
 <script>
-window.addEventListener("load", () => setTimeout(() => document.getElementById("loader").classList.add("loader-hidden"), 1200));
+window.addEventListener("load", () => setTimeout(() => document.getElementById("loader").classList.add("loader-hidden"), 1500));
 
-let prompts = JSON.parse(localStorage.getItem('prompts')) || [
-    { name:"Desenvolvedor", category:"Tecnologia", prompt:"Aja como um desenvolvedor Full Stack experiente. Refatore o código abaixo para melhorar a legibilidade e a performance: [COLE O CÓDIGO]." },
-    { name:"Psicólogo", category:"Saúde", prompt:"Aja como um terapeuta cognitivo-comportamental. Ajude-me a identificar e desafiar pensamentos automáticos negativos sobre: [SITUAÇÃO]." },
-    { name:"Social Media", category:"Marketing", prompt:"Crie um calendário de postagens de 15 dias para uma marca de [NICHO], focando em autoridade e engajamento orgânico." },
-    { name:"Nutricionista", category:"Bem-estar", prompt:"Aja como um nutricionista funcional. Monte uma lista de compras para uma semana focada em alimentos anti-inflamatórios." }
+// PROFISSÕES PADRÃO
+let professions = [
+    { name: "Médico", icon: "fa-stethoscope", color: "text-red-400" },
+    { name: "Dev Senior", icon: "fa-terminal", color: "text-blue-400" },
+    { name: "Nutricionista", icon: "fa-apple-alt", color: "text-green-400" },
+    { name: "Advogado", icon: "fa-gavel", color: "text-yellow-400" },
+    { name: "Social Media", icon: "fa-hashtag", color: "text-pink-400" }
 ];
+
+// BANCO DE DADOS DE SALVOS (LOCAL STORAGE)
+let mySavedPrompts = JSON.parse(localStorage.getItem('my_ai_library')) || [];
 
 function render() {
     const searchVal = document.getElementById('search').value.toLowerCase();
     const grid = document.getElementById('grid');
     grid.innerHTML = "";
     
-    prompts.filter(p => p.name.toLowerCase().includes(searchVal)).forEach((p, i) => {
+    professions.filter(p => p.name.toLowerCase().includes(searchVal)).forEach((p) => {
         grid.innerHTML += `
-            <div class="bg-gray-900 p-8 rounded-[2rem] border border-gray-800 hover:border-indigo-500/40 transition-all shadow-xl group">
-                <span class="text-[10px] font-black uppercase text-indigo-400 bg-indigo-900/20 px-3 py-1 rounded-full mb-3 inline-block">${p.category || 'Geral'}</span>
-                <h2 class="text-2xl font-bold mb-6 group-hover:text-white transition-colors">${p.name}</h2>
-                <div class="flex flex-col gap-3">
-                    <button onclick="copy('${p.prompt.replace(/'/g, "\\'")}', this)" class="bg-indigo-600 hover:bg-indigo-500 py-4 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all active:scale-95 shadow-md">
-                        <i class="fas fa-copy"></i> Copiar Prompt
-                    </button>
-                    <button onclick="openCompare('${p.name}')" class="bg-gray-800 hover:bg-gray-700 py-3 rounded-2xl font-bold flex items-center justify-center gap-2 text-xs transition-all text-gray-400 border border-gray-700 uppercase tracking-widest">
-                        <i class="fas fa-columns"></i> Comparar IA's
-                    </button>
+            <div onclick="openList('${p.name}')" class="group cursor-pointer bg-slate-900 p-10 rounded-[3rem] border border-slate-800 hover:border-indigo-500/50 transition-all shadow-2xl relative overflow-hidden">
+                <div class="absolute -right-4 -top-4 text-slate-800 text-8xl opacity-10 group-hover:rotate-12 transition-all">
+                    <i class="fas ${p.icon}"></i>
+                </div>
+                <i class="fas ${p.icon} ${p.color} text-4xl mb-6"></i>
+                <h2 class="text-3xl font-black mb-2 italic tracking-tighter">${p.name}</h2>
+                <p class="text-slate-500 font-bold text-xs uppercase tracking-widest">50 Prompts Ativos</p>
+                <div class="mt-8 flex items-center gap-2 text-indigo-400 font-black text-sm">
+                    ACESSAR PASTA <i class="fas fa-chevron-right text-[10px]"></i>
                 </div>
             </div>`;
     });
 }
 
-function openCompare(name) {
-    document.getElementById('modalCompare').classList.remove('hidden');
-    const content = document.getElementById('compare-content');
-    content.innerHTML = `
-        <div class="p-6 bg-gray-800/40 rounded-2xl border border-gray-700">
-            <h3 class="text-green-400 font-bold mb-3 flex items-center gap-2"><i class="fas fa-bolt text-xs"></i> GPT-4o</h3>
-            <p class="text-sm text-gray-400 leading-relaxed">Resposta direta, lógica e altamente eficiente para tarefas de ${name}.</p>
-        </div>
-        <div class="p-6 bg-gray-800/40 rounded-2xl border border-gray-700">
-            <h3 class="text-blue-400 font-bold mb-3 flex items-center gap-2"><i class="fas fa-star text-xs"></i> Gemini 1.5</h3>
-            <p class="text-sm text-gray-400 leading-relaxed">Excelente para pesquisas amplas e raciocínio multimodal sobre ${name}.</p>
-        </div>
-        <div class="p-6 bg-gray-800/40 rounded-2xl border border-gray-700">
-            <h3 class="text-orange-400 font-bold mb-3 flex items-center gap-2"><i class="fas fa-feather text-xs"></i> Claude 3.5</h3>
-            <p class="text-sm text-gray-400 leading-relaxed">Melhor para tons humanizados, escrita criativa e precisão em ${name}.</p>
-        </div>
-    `;
-}
+function openList(name) {
+    const modal = document.getElementById('modalList');
+    const container = document.getElementById('promptContainer');
+    document.getElementById('listTitle').innerText = name;
+    container.innerHTML = "";
+    modal.classList.remove('hidden');
 
-function closeCompare() { document.getElementById('modalCompare').classList.add('hidden'); }
-
-function inspireMe() {
-    const creative = [
-        { name: "Escritor Sci-Fi", category: "Criativo", prompt: "Aja como um escritor de ficção científica premiado. Descreva um mundo onde a música é a única fonte de energia." },
-        { name: "Mestre de RPG", category: "Games", prompt: "Crie uma missão épica para um grupo de nível 5 em um cenário de fantasia sombria, incluindo NPCs e reviravoltas." }
-    ];
-    const item = creative[Math.floor(Math.random() * creative.length)];
-    prompts.unshift(item);
-    render();
-}
-
-function saveNewPrompt() {
-    const name = document.getElementById('newName').value;
-    const txt = document.getElementById('newPrompt').value;
-    if(name && txt) {
-        prompts.unshift({ name, category: "Manual", prompt: txt });
-        localStorage.setItem('prompts', JSON.stringify(prompts));
-        render();
-        document.getElementById('modalAdd').classList.add('hidden');
+    for(let i=1; i<=50; i++) {
+        let text = `Aja como um especialista sênior em ${name}. Gere um plano estratégico para a tarefa #${i} focando em resultados de elite e automação.`;
+        container.innerHTML += `
+            <div class="bg-slate-800/50 p-6 rounded-[2rem] border border-slate-700 hover:border-indigo-500/30 transition-all group">
+                <p class="text-slate-400 text-xs font-bold mb-3">MODELO PROFISSIONAL #${i}</p>
+                <p class="text-sm text-slate-200 mb-5 leading-relaxed">${text}</p>
+                <div class="flex gap-2">
+                    <button onclick="copy('${text.replace(/'/g, "\\'")}', this)" class="flex-1 bg-indigo-600 py-3 rounded-xl font-black text-xs tracking-widest transition-all hover:bg-indigo-500 shadow-lg">COPIAR</button>
+                    <button onclick="addToSaved('${name}', '${text.replace(/'/g, "\\'")}')" class="bg-slate-700 px-4 rounded-xl hover:bg-yellow-600 transition-all"><i class="fas fa-star"></i></button>
+                </div>
+            </div>`;
     }
 }
 
+function openAIGenerator() { document.getElementById('modalAI').classList.remove('hidden'); }
+
+function generateAIProfession() {
+    const val = document.getElementById('aiInput').value;
+    if(val) {
+        professions.unshift({ name: val, icon: "fa-robot", color: "text-indigo-400" });
+        render();
+        document.getElementById('modalAI').classList.add('hidden');
+        document.getElementById('aiInput').value = "";
+        openList(val);
+    }
+}
+
+function addToSaved(prof, text) {
+    mySavedPrompts.unshift({ prof, text });
+    localStorage.setItem('my_ai_library', JSON.stringify(mySavedPrompts));
+    alert("🌟 Salvo na sua pasta 'Meus Salvos'!");
+}
+
+function openSavedLibrary() {
+    const modal = document.getElementById('modalList');
+    const container = document.getElementById('promptContainer');
+    document.getElementById('listTitle').innerText = "MEUS SALVOS";
+    container.innerHTML = "";
+    modal.classList.remove('hidden');
+
+    if(mySavedPrompts.length === 0) {
+        container.innerHTML = "<p class='text-slate-500 text-center py-20 font-bold'>Você ainda não salvou nenhum prompt com a estrela.</p>";
+        return;
+    }
+
+    mySavedPrompts.forEach((item, i) => {
+        container.innerHTML += `
+            <div class="bg-slate-800 p-6 rounded-[2rem] border-2 border-yellow-500/20">
+                <p class="text-yellow-500 text-[10px] font-black mb-2 uppercase tracking-widest">${item.prof}</p>
+                <p class="text-sm text-slate-200 mb-5">${item.text}</p>
+                <div class="flex gap-2">
+                    <button onclick="copy('${item.text.replace(/'/g, "\\'")}', this)" class="flex-1 bg-indigo-600 py-3 rounded-xl font-black text-xs transition-all">COPIAR</button>
+                    <button onclick="removeSaved(${i})" class="bg-red-900/30 text-red-500 px-4 rounded-xl"><i class="fas fa-trash"></i></button>
+                </div>
+            </div>`;
+    });
+}
+
+function removeSaved(i) {
+    mySavedPrompts.splice(i, 1);
+    localStorage.setItem('my_ai_library', JSON.stringify(mySavedPrompts));
+    openSavedLibrary();
+}
+
+function closeList() { document.getElementById('modalList').classList.add('hidden'); }
+
 function copy(text, btn) {
     navigator.clipboard.writeText(text);
-    const old = btn.innerHTML;
-    btn.innerHTML = '<i class="fas fa-check"></i> Copiado!';
-    btn.classList.replace('bg-indigo-600', 'bg-green-600');
-    setTimeout(() => {
-        btn.innerHTML = old;
-        btn.classList.replace('bg-green-600', 'bg-indigo-600');
-    }, 2000);
+    const old = btn.innerText;
+    btn.innerText = "COPIADO!";
+    setTimeout(() => btn.innerText = old, 1500);
 }
 
 render();
 </script>
 </body>
-    </html>
+            </html>
     
