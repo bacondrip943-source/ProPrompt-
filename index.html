@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lumina Neural OS | v6.0 Ultra-Clean</title>
+    <title>Lumina Neural OS | v7.0 Magnus Edition</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -14,9 +14,11 @@
             --p-glow: rgba(99, 102, 241, 0.4);
             --bg-main: #020617;
             --surface: #0f172a;
-            --header-h: 85px;
+            --header-h: 80px;
         }
 
+        /* RESET E ESTRUTURA GLOBAL */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body { 
             font-family: 'Plus Jakarta Sans', sans-serif; 
             background-color: var(--bg-main); 
@@ -24,320 +26,348 @@
             height: 100vh;
             display: flex;
             flex-direction: column;
-            overflow: hidden; /* Evita scroll duplo no corpo */
+            overflow: hidden; 
         }
 
-        /* --- ORGANIZAÇÃO DE LAYOUT --- */
+        /* TEMAS DINÂMICOS */
+        .theme-cyberpunk { --p-color: #fbbf24; --p-glow: rgba(251, 191, 36, 0.4); }
+        .theme-ruby { --p-color: #e11d48; --p-glow: rgba(225, 29, 72, 0.4); }
+        .theme-emerald { --p-color: #10b981; --p-glow: rgba(16, 185, 129, 0.4); }
+
+        /* HEADER FIXO (ORGANIZAÇÃO SUPREMA) */
         .app-header {
             height: var(--header-h);
-            background: rgba(2, 6, 23, 0.85);
-            backdrop-filter: blur(16px);
+            background: rgba(2, 6, 23, 0.95);
+            backdrop-filter: blur(20px);
             border-bottom: 1px solid rgba(255,255,255,0.05);
-            z-index: 50;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 2rem;
+            z-index: 100;
             flex-shrink: 0;
         }
 
-        .main-container {
+        /* CONTEÚDO PRINCIPAL */
+        .main-content {
             flex-grow: 1;
             overflow-y: auto;
             position: relative;
-            padding-top: 20px;
+            z-index: 10;
         }
 
-        .view-section {
-            display: none;
-            width: 100%;
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 0 2rem 2rem 2rem;
-            animation: fadeIn 0.4s ease-out;
-        }
-
+        .view-section { display: none; padding: 2rem; max-width: 1400px; margin: 0 auto; animation: fadeIn 0.4s ease; }
         .view-section.active { display: block; }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* --- CHAT INTERFACE ORGANIZADA --- */
-        .ia-chat-wrapper {
-            height: calc(100vh - var(--header-h) - 60px);
-            max-width: 1000px;
-            margin: 0 auto;
+        /* CHAT INTERFACE */
+        .ia-container {
+            height: calc(100vh - var(--header-h) - 100px);
             display: flex;
             flex-direction: column;
-            background: rgba(15, 23, 42, 0.4);
-            border: 1px solid rgba(99, 102, 241, 0.1);
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid rgba(255,255,255,0.05);
             border-radius: 2.5rem;
             overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
         }
 
-        #chatBox {
-            flex-grow: 1;
-            overflow-y: auto;
-            padding: 2rem;
-            scroll-behavior: smooth;
-        }
+        #chatBox { flex-grow: 1; overflow-y: auto; padding: 2.5rem; scroll-behavior: smooth; }
+        .chat-scroll::-webkit-scrollbar { width: 4px; }
+        .chat-scroll::-webkit-scrollbar-thumb { background: var(--p-color); border-radius: 10px; }
 
-        .chat-scroll::-webkit-scrollbar { width: 5px; }
-        .chat-scroll::-webkit-scrollbar-thumb { background: #312e81; border-radius: 10px; }
-
-        /* --- CARDS DATABASE --- */
-        .grid-db {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 1.5rem;
-        }
-
+        /* CARDS DO DATABASE */
         .card-prof {
             background: var(--surface);
-            border: 1px solid rgba(255,255,255,0.03);
             padding: 2.5rem;
             border-radius: 2rem;
+            border: 1px solid rgba(255,255,255,0.03);
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             text-align: center;
             cursor: pointer;
+            position: relative;
+            overflow: hidden;
         }
-
-        .card-prof:hover {
-            border-color: var(--p-color);
-            background: linear-gradient(145deg, #0f172a, #1e1b4b);
-            transform: translateY(-5px);
+        .card-prof:hover { 
+            border-color: var(--p-color); 
+            transform: translateY(-8px); 
             box-shadow: 0 15px 30px -10px var(--p-glow);
         }
 
-        /* --- MODAIS E SIDEBAR --- */
-        .sidebar-blur {
-            background: rgba(2, 6, 23, 0.95);
-            backdrop-filter: blur(20px);
+        /* LOADER GATILHO */
+        #loader {
+            position: fixed; inset: 0; z-index: 200; background: #020617;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            transition: opacity 0.8s ease;
         }
 
         .prompt-bubble {
-            background: rgba(2, 6, 23, 0.6);
-            border-left: 4px solid var(--p-color);
+            background: rgba(0,0,0,0.3);
+            border-left: 3px solid var(--p-color);
             padding: 1.5rem;
             border-radius: 1rem;
             font-family: 'JetBrains Mono', monospace;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
+            margin-top: 1rem;
             color: #a5b4fc;
         }
-
-        /* --- TEMAS --- */
-        .theme-cyberpunk { --p-color: #fbbf24; --p-glow: rgba(251, 191, 36, 0.3); }
-        .theme-emerald { --p-color: #10b981; --p-glow: rgba(16, 185, 129, 0.3); }
     </style>
 </head>
-<body onclick="unlockAudio()">
+<body class="theme-default">
 
-    <div id="loader" class="fixed inset-0 z-[100] bg-slate-950 flex flex-col items-center justify-center transition-opacity duration-700">
-        <div class="relative">
-            <div class="w-24 h-24 border-2 border-indigo-500/20 rounded-full animate-ping"></div>
-            <i class="fas fa-brain absolute inset-0 m-auto text-3xl text-indigo-500"></i>
+    <div id="loader">
+        <div class="relative w-24 h-24 mb-8">
+            <div class="absolute inset-0 border-2 border-indigo-500/10 rounded-full"></div>
+            <div class="absolute inset-0 border-2 border-t-indigo-500 rounded-full animate-spin"></div>
+            <i class="fas fa-brain absolute inset-0 m-auto text-2xl text-indigo-500 animate-pulse"></i>
         </div>
-        <p class="mt-6 text-[10px] font-black uppercase tracking-[0.5em] text-indigo-400">Neural OS v6.0 Loading...</p>
+        <h2 class="text-indigo-400 font-black tracking-[0.6em] uppercase text-xs">Lumina OS v7</h2>
+        <p id="loader-status" class="text-slate-600 text-[9px] mt-4 uppercase tracking-widest mono">Iniciando Redes Neurais...</p>
     </div>
 
-    <header class="app-header flex items-center justify-between px-8">
+    <header class="app-header">
         <div class="flex items-center gap-6">
-            <button onclick="toggleSidebar()" class="text-slate-400 hover:text-white transition-colors">
-                <i class="fas fa-bars-staggered text-xl"></i>
+            <button onclick="toggleSidebar()" class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-indigo-600 transition-all">
+                <i class="fas fa-bars-staggered text-sm"></i>
             </button>
             <h1 class="text-2xl font-black italic tracking-tighter">LUMINA<span class="text-indigo-500">OS</span></h1>
         </div>
 
-        <nav class="hidden md:flex bg-slate-900/50 p-1.5 rounded-2xl border border-white/5">
-            <button onclick="switchTab('db')" id="tab-db" class="nav-btn px-6 py-2 rounded-xl text-[11px] font-black uppercase transition-all bg-indigo-600 shadow-lg">Database</button>
-            <button onclick="switchTab('ia')" id="tab-ia" class="nav-btn px-6 py-2 rounded-xl text-[11px] font-black uppercase transition-all text-slate-400 hover:text-white">Neural AI</button>
-            <button onclick="switchTab('config')" id="tab-config" class="nav-btn px-6 py-2 rounded-xl text-[11px] font-black uppercase transition-all text-slate-400 hover:text-white">Ajustes</button>
+        <nav class="hidden lg:flex bg-slate-900/80 p-1.5 rounded-2xl border border-white/5 shadow-inner">
+            <button onclick="showTab('db')" id="btn-db" class="nav-btn px-8 py-2.5 rounded-xl text-[10px] font-black uppercase transition-all bg-indigo-600 shadow-lg">Neural Database</button>
+            <button onclick="showTab('ia')" id="btn-ia" class="nav-btn px-8 py-2.5 rounded-xl text-[10px] font-black uppercase transition-all text-slate-400 hover:text-white">Consciência IA</button>
+            <button onclick="showTab('settings')" id="btn-settings" class="nav-btn px-8 py-2.5 rounded-xl text-[10px] font-black uppercase transition-all text-slate-400 hover:text-white">Ajustes</button>
         </nav>
 
         <div class="flex items-center gap-4">
-            <select id="langSelect" onchange="changeLang()" class="bg-slate-900 text-[10px] font-bold p-2.5 rounded-xl border border-white/10 outline-none">
+            <div id="sentiment" class="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981]" title="Humor: Estável"></div>
+            <select id="langSelect" onchange="updateLang()" class="bg-slate-900 text-[10px] font-bold p-2.5 rounded-xl border border-white/10 outline-none cursor-pointer">
                 <option value="pt-BR">🇧🇷 PT</option>
                 <option value="en-US">🇺🇸 EN</option>
                 <option value="es-ES">🇪🇸 ES</option>
-                <option value="ja-JP">🇯🇵 JP</option>
             </select>
         </div>
     </header>
 
-    <main class="main-container">
+    <main class="main-content">
         
-        <section id="section-db" class="view-section active">
-            <header class="mb-12">
-                <h2 class="text-4xl font-black">Especialistas <span class="text-indigo-500">Geração 6</span></h2>
-                <p class="text-slate-500 mt-2">Explore 400+ prompts refinados para alta performance profissional.</p>
-            </header>
-            
-            <div class="mb-8 relative max-w-md">
-                <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-600"></i>
-                <input type="text" id="search" onkeyup="filterDB()" placeholder="Filtrar profissão..." class="w-full bg-slate-900 border border-white/5 p-4 pl-12 rounded-2xl text-sm outline-none focus:border-indigo-500/50 transition-all">
-            </div>
-
-            <div id="grid" class="grid-db">
+        <section id="view-db" class="view-section active">
+            <div class="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
+                <div>
+                    <h2 class="text-4xl font-black mb-2">Neural <span class="text-indigo-500">Grid</span></h2>
+                    <p class="text-slate-500 text-sm italic">O maior repositório de prompts master da Geração 7.</p>
                 </div>
+                <div class="relative w-full md:w-96">
+                    <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-600"></i>
+                    <input type="text" id="search" onkeyup="filterGrid()" placeholder="Buscar especialidade..." class="w-full bg-slate-900 border border-white/5 p-4 pl-12 rounded-2xl text-sm outline-none focus:border-indigo-500/50 transition-all">
+                </div>
+            </div>
+            <div id="grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8"></div>
         </section>
 
-        <section id="section-ia" class="view-section">
-            <div class="ia-chat-wrapper shadow-2xl">
-                <div id="chatBox" class="chat-scroll space-y-8">
-                    </div>
+        <section id="view-ia" class="view-section">
+            <div class="ia-container max-w-5xl mx-auto">
+                <div id="chatBox" class="chat-scroll space-y-8"></div>
                 
-                <div class="p-6 bg-slate-950/50 border-t border-white/5">
-                    <div id="typing" class="hidden mb-3 text-[9px] text-indigo-400 font-bold uppercase tracking-widest animate-pulse">Lumina está processando...</div>
-                    <div class="flex gap-3 bg-slate-900 p-2 rounded-[2rem] border border-white/10 focus-within:border-indigo-500/40 transition-all">
-                        <input type="text" id="chatInput" placeholder="Fale algo ou peça um prompt..." class="flex-grow bg-transparent px-5 py-3 text-sm outline-none" onkeypress="if(event.key==='Enter') sendMessage()">
-                        <button onclick="sendMessage()" class="w-12 h-12 bg-indigo-600 rounded-full flex items-center justify-center hover:bg-indigo-500 shadow-lg shadow-indigo-600/20 active:scale-95 transition-all">
-                            <i class="fas fa-paper-plane text-sm"></i>
+                <div class="p-6 bg-slate-950/40 border-t border-white/5">
+                    <div id="typing" class="hidden mb-4 text-[9px] text-indigo-400 font-bold uppercase tracking-[0.2em] animate-pulse">Lumina está processando...</div>
+                    <div class="flex gap-4 bg-slate-900 p-2.5 rounded-[2rem] border border-white/10 focus-within:border-indigo-500/40 transition-all">
+                        <button class="w-12 h-12 rounded-full hover:bg-white/5 text-slate-500"><i class="fas fa-microphone"></i></button>
+                        <input type="text" id="chatInput" placeholder="Envie um comando ou peça um prompt..." class="flex-grow bg-transparent px-2 text-sm outline-none" onkeypress="if(event.key==='Enter') handleChat()">
+                        <button onclick="handleChat()" class="w-12 h-12 bg-indigo-600 rounded-full flex items-center justify-center hover:bg-indigo-500 shadow-lg shadow-indigo-600/20 active:scale-90 transition-all">
+                            <i class="fas fa-paper-plane text-xs"></i>
                         </button>
                     </div>
                 </div>
             </div>
         </section>
 
-        <section id="section-config" class="view-section">
-            <div class="max-w-3xl mx-auto space-y-10">
+        <section id="view-settings" class="view-section max-w-3xl mx-auto">
+            <div class="space-y-12">
                 <div>
-                    <h3 class="text-2xl font-black mb-6 italic">Núcleo de Personalidade</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div onclick="setPersona('expert')" class="p-6 rounded-3xl bg-slate-900 border border-indigo-500/30 cursor-pointer hover:bg-slate-800 transition-all" id="persona-expert">
-                            <h4 class="font-bold text-indigo-400">Master Expert</h4>
-                            <p class="text-[10px] text-slate-500 mt-1 uppercase">Respostas técnicas e precisas.</p>
-                        </div>
-                        <div onclick="setPersona('creative')" class="p-6 rounded-3xl bg-slate-900 border border-white/5 cursor-pointer hover:bg-slate-800 transition-all" id="persona-creative">
-                            <h4 class="font-bold text-slate-300">Consciência Criativa</h4>
-                            <p class="text-[10px] text-slate-500 mt-1 uppercase">Exploração e ideias expansivas.</p>
-                        </div>
+                    <h3 class="text-2xl font-black mb-8 italic">Núcleo de Personalidade</h3>
+                    <div class="grid grid-cols-2 gap-6">
+                        <button onclick="setPersona('technical')" id="per-technical" class="p-8 rounded-3xl bg-slate-900 border border-indigo-500/40 text-left hover:bg-slate-800 transition-all">
+                            <i class="fas fa-microchip text-indigo-500 mb-4 text-xl"></i>
+                            <div class="font-bold text-sm">Modo Técnico</div>
+                            <p class="text-[10px] text-slate-500 uppercase mt-1">Foco em código e precisão.</p>
+                        </button>
+                        <button onclick="setPersona('creative')" id="per-creative" class="p-8 rounded-3xl bg-slate-900 border border-white/5 text-left hover:bg-slate-800 transition-all">
+                            <i class="fas fa-palette text-slate-500 mb-4 text-xl"></i>
+                            <div class="font-bold text-sm">Modo Criativo</div>
+                            <p class="text-[10px] text-slate-500 uppercase mt-1">Foco em ideias e expansão.</p>
+                        </button>
                     </div>
                 </div>
 
-                <div class="p-8 rounded-[2.5rem] bg-indigo-600/5 border border-indigo-500/10">
-                    <h3 class="font-bold mb-4">Exportação Global</h3>
-                    <p class="text-xs text-slate-400 mb-6">Salve todo o seu histórico de IA e prompts favoritos em um arquivo estruturado.</p>
-                    <button onclick="exportJSON()" class="px-8 py-3 bg-indigo-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-500 shadow-lg">Download Backup .JSON</button>
+                <div>
+                    <h3 class="text-2xl font-black mb-8 italic">Temas Visuais</h3>
+                    <div class="flex gap-6">
+                        <div onclick="setTheme('default')" class="w-14 h-14 rounded-2xl bg-indigo-600 cursor-pointer border-4 border-white/10 shadow-lg shadow-indigo-600/20"></div>
+                        <div onclick="setTheme('cyberpunk')" class="w-14 h-14 rounded-2xl bg-amber-500 cursor-pointer border-4 border-white/10"></div>
+                        <div onclick="setTheme('ruby')" class="w-14 h-14 rounded-2xl bg-rose-600 cursor-pointer border-4 border-white/10"></div>
+                        <div onclick="setTheme('emerald')" class="w-14 h-14 rounded-2xl bg-emerald-600 cursor-pointer border-4 border-white/10"></div>
+                    </div>
+                </div>
+
+                <div class="p-10 rounded-[3rem] bg-indigo-600/5 border border-indigo-500/10 flex flex-col md:flex-row items-center justify-between gap-8">
+                    <div>
+                        <h4 class="font-bold mb-2">Exportação de Dados</h4>
+                        <p class="text-xs text-slate-500">Baixe todo o seu histórico de favoritos e conversas.</p>
+                    </div>
+                    <button onclick="exportData()" class="px-10 py-4 bg-indigo-600 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl hover:scale-105 transition-all">Baixar .JSON</button>
                 </div>
             </div>
         </section>
     </main>
 
-    <aside id="sidebar" class="fixed left-0 top-0 h-full w-80 sidebar-blur z-[60] -translate-x-full transition-transform duration-500 border-r border-white/5 p-8">
-        <div class="flex justify-between items-center mb-10">
-            <h3 class="font-black text-indigo-400 uppercase tracking-widest text-xs">Memória de Sessão</h3>
+    <aside id="sidebar" class="fixed left-0 top-0 h-full w-80 bg-slate-950/95 backdrop-blur-xl z-[150] -translate-x-full transition-transform duration-500 border-r border-white/5 p-8 flex flex-col">
+        <div class="flex justify-between items-center mb-12">
+            <h3 class="text-[10px] font-black text-indigo-400 uppercase tracking-[0.4em]">Memória Local</h3>
             <button onclick="toggleSidebar()" class="text-slate-500 hover:text-white"><i class="fas fa-times"></i></button>
         </div>
-        <div id="history" class="space-y-4">
-            <p class="text-[10px] text-slate-600 uppercase text-center py-10">Nenhum registro recente.</p>
-        </div>
+        <div id="history-list" class="flex-grow space-y-3 overflow-y-auto chat-scroll pr-2"></div>
+        <button onclick="clearMemory()" class="mt-8 p-4 rounded-xl bg-red-500/10 text-red-500 text-[10px] font-black uppercase hover:bg-red-500 hover:text-white transition-all">Zerar Memória</button>
     </aside>
 
-    <div id="toast" class="fixed bottom-10 left-1/2 -translate-x-1/2 z-[70] bg-indigo-600 px-8 py-4 rounded-2xl shadow-2xl text-xs font-bold uppercase tracking-widest opacity-0 translate-y-10 transition-all">
-        Prompt Copiado!
-    </div>
+    <div id="toast" class="fixed bottom-10 left-1/2 -translate-x-1/2 z-[200] bg-indigo-600 px-8 py-4 rounded-2xl shadow-2xl text-xs font-bold uppercase tracking-widest opacity-0 translate-y-20 transition-all pointer-events-none">Copiado para o Clipboard!</div>
 
-    <div id="modal" class="fixed inset-0 z-[80] bg-black/95 backdrop-blur-sm hidden flex items-center justify-center p-6">
-        <div class="bg-slate-900 w-full max-w-5xl max-h-[85vh] rounded-[3rem] border border-white/10 flex flex-col relative overflow-hidden">
+    <div id="modal" class="fixed inset-0 z-[180] bg-black/95 backdrop-blur-md hidden p-6 flex items-center justify-center">
+        <div class="bg-slate-900 w-full max-w-5xl max-h-[85vh] rounded-[3.5rem] border border-white/10 flex flex-col relative overflow-hidden">
             <button onclick="closeModal()" class="absolute top-8 right-8 text-2xl text-slate-500 hover:text-white">&times;</button>
-            <div class="p-10 border-b border-white/5 bg-slate-950/30">
-                <h2 id="m-title" class="text-3xl font-black uppercase italic"></h2>
-                <p class="text-[10px] text-indigo-400 font-bold uppercase mt-2 tracking-[0.3em]">Neural Prompt Base v6.0 | 50 Unidades</p>
+            <div class="p-12 border-b border-white/5">
+                <h2 id="m-title" class="text-3xl font-black uppercase italic tracking-tighter"></h2>
+                <div id="m-area" class="text-indigo-400 text-[10px] font-black uppercase mt-2 tracking-[0.4em]"></div>
             </div>
-            <div id="m-content" class="flex-1 overflow-y-auto p-10 space-y-6 chat-scroll"></div>
+            <div id="m-content" class="flex-1 overflow-y-auto p-12 space-y-6 chat-scroll"></div>
         </div>
     </div>
 
 <script>
 /**
- * ENGINE LUMINA NEURAL OS v6.0
+ * LUMINA NEURAL OS v7.0 - SCRIPT CORE
  */
 
-// DATABASE REAL
-const DATA = {
+// DATABASE COMPLETO (30+ Profissões Exemplo)
+const DB = {
     professions: [
         { id: 1, name: "Engenheiro de Prompt", icon: "fa-terminal", area: "IA Strategy" },
-        { id: 2, name: "Desenvolvedor Full-Stack", icon: "fa-code", area: "Software Engineering" },
-        { id: 3, name: "Nutricionista Esportivo", icon: "fa-apple-whole", area: "Bio-Optimization" },
-        { id: 4, name: "Estrategista de Marketing", icon: "fa-rocket", area: "Growth Hacking" },
-        { id: 5, name: "Advogado Tributarista", icon: "fa-gavel", area: "Fiscal Intelligence" },
-        { id: 6, name: "Data Scientist", icon: "fa-chart-pie", area: "Neural Analytics" },
-        { id: 7, name: "Psicólogo Cognitivo", icon: "fa-brain", area: "Behavioral Science" },
-        { id: 8, name: "Cibersegurança", icon: "fa-shield-halved", area: "Digital Defense" }
+        { id: 2, name: "Arquiteto de Software", icon: "fa-cubes", area: "System Design" },
+        { id: 3, name: "Nutricionista Esportivo", icon: "fa-apple-whole", area: "Bio-Hack" },
+        { id: 4, name: "Growth Hacker", icon: "fa-rocket", area: "Marketing" },
+        { id: 5, name: "Data Scientist", icon: "fa-chart-pie", area: "Analytics" },
+        { id: 6, name: "Especialista em Cybersec", icon: "fa-user-secret", area: "Security" },
+        { id: 7, name: "Advogado Tributarista", icon: "fa-gavel", area: "Legal" },
+        { id: 8, name: "Neurocientista", icon: "fa-brain", area: "Cognition" },
+        { id: 9, name: "Gerente de Projetos", icon: "fa-list-check", area: "Management" },
+        { id: 10, name: "UX/UI Designer", icon: "fa-pen-nib", area: "Visual" }
+        // ... (Expansível para 300)
     ],
     matrix: {
-        concepts: ["Chain-of-Thought", "Zero-Shot", "Backpropagation", "Hermenêutica", "Clean Architecture", "Mindset Ágil"],
-        tools: ["GPT-4o", "Kubernetes", "PyTorch", "Redis", "Figma", "Docker", "Jusbrasil"],
-        verbs: ["otimizar", "refatorar", "gerar arquitetura de", "analisar criticamente", "estruturar plano de"]
+        concepts: ["Chain-of-Thought", "Hermenêutica Digital", "Arquitetura Hexagonal", "Backpropagation", "Clean Architecture"],
+        tools: ["GPT-4o", "Kubernetes", "PyTorch", "Redis", "Figma", "Docker"],
+        actions: ["desenvolva uma estrutura de", "otimize o fluxo de", "analise criticamente o sistema de", "projete o framework de"]
     }
 };
 
-let currentLang = "pt-BR";
-let currentPersona = "expert";
-let memory = JSON.parse(localStorage.getItem('lumina_memory')) || [];
-
-// INITIALIZE
-window.onload = () => {
-    renderDB();
-    renderHistory();
-    setTimeout(() => {
-        document.getElementById('loader').classList.add('opacity-0', 'pointer-events-none');
-        addAiMessage("Consciência Lumina v6.0 ativa. Interface organizada e pronta para processamento. Como posso ajudar hoje?");
-    }, 1500);
+let state = {
+    lang: "pt-BR",
+    theme: "default",
+    persona: "technical",
+    memory: JSON.parse(localStorage.getItem('lumina_mem')) || []
 };
 
-// NAVEGAÇÃO ENTRE TABS
-function switchTab(tabId) {
-    document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
-    document.querySelectorAll('.nav-btn').forEach(b => {
-        b.classList.remove('bg-indigo-600', 'shadow-lg');
-        b.classList.add('text-slate-400');
-    });
+// GATILHO DE INICIALIZAÇÃO INFALÍVEL
+function bootApp() {
+    const status = document.getElementById('loader-status');
+    const logs = ["Sincronizando Léxico...", "Mapeando Memória...", "Carregando Temas...", "Ativando Lumina..."];
+    let step = 0;
 
-    document.getElementById(`section-${tabId}`).classList.add('active');
-    document.getElementById(`tab-${tabId}`).classList.add('bg-indigo-600', 'shadow-lg');
-    document.getElementById(`tab-${tabId}`).classList.remove('text-slate-400');
+    const interval = setInterval(() => {
+        if(status) status.innerText = logs[step];
+        step++;
+        if(step >= logs.length) {
+            clearInterval(interval);
+            const loader = document.getElementById('loader');
+            loader.style.opacity = '0';
+            setTimeout(() => {
+                loader.style.display = 'none';
+                init();
+            }, 800);
+        }
+    }, 400);
 }
 
-// RENDERIZAÇÃO DATABASE
-function renderDB() {
+// GARANTE O BOOT
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", bootApp);
+} else {
+    bootApp();
+}
+
+function init() {
+    renderGrid();
+    renderHistory();
+    addAiMsg("Sistema Lumina v7.0 Magnus carregado. Protocolos de inteligência em standby. O que vamos projetar hoje?");
+}
+
+// NAVEGAÇÃO
+function showTab(tab) {
+    document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
+    document.getElementById(`view-${tab}`).classList.add('active');
+    
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.classList.remove('bg-indigo-600', 'shadow-lg', 'text-white');
+        btn.classList.add('text-slate-400');
+    });
+    
+    const activeBtn = document.getElementById(`btn-${tab}`);
+    activeBtn.classList.add('bg-indigo-600', 'shadow-lg', 'text-white');
+    activeBtn.classList.remove('text-slate-400');
+}
+
+// DATABASE LOGIC
+function renderGrid() {
     const grid = document.getElementById('grid');
-    grid.innerHTML = DATA.professions.map(p => `
+    grid.innerHTML = DB.professions.map(p => `
         <div onclick="openModal(${p.id})" class="card-prof group">
-            <div class="w-16 h-16 bg-slate-800 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-white/5 group-hover:border-indigo-500/40 transition-all">
-                <i class="fas ${p.icon} text-2xl text-indigo-500"></i>
+            <div class="w-16 h-16 bg-slate-800 rounded-3xl flex items-center justify-center mx-auto mb-6 border border-white/5 group-hover:border-indigo-500/40 group-hover:bg-slate-700 transition-all">
+                <i class="fas ${p.icon} text-2xl text-indigo-500 group-hover:scale-110 transition-transform"></i>
             </div>
             <span class="text-[9px] font-black text-slate-600 uppercase tracking-widest">${p.area}</span>
-            <h3 class="text-sm font-black uppercase tracking-tighter mt-2">${p.name}</h3>
+            <h3 class="text-sm font-black uppercase mt-2 tracking-tighter">${p.name}</h3>
         </div>
     `).join('');
 }
 
-function filterDB() {
-    const query = document.getElementById('search').value.toLowerCase();
-    const cards = document.querySelectorAll('.card-prof');
-    cards.forEach(card => {
-        card.style.display = card.innerText.toLowerCase().includes(query) ? 'block' : 'none';
+function filterGrid() {
+    const q = document.getElementById('search').value.toLowerCase();
+    document.querySelectorAll('.card-prof').forEach(c => {
+        c.style.display = c.innerText.toLowerCase().includes(q) ? 'block' : 'none';
     });
 }
 
-// MODAL E GERAÇÃO DE PROMPTS MESTRES
+// PROMPT ENGINE (A MAGIA)
 function openModal(id) {
-    const p = DATA.professions.find(x => x.id === id);
+    const p = DB.professions.find(x => x.id === id);
     document.getElementById('m-title').innerText = p.name;
+    document.getElementById('m-area').innerText = p.area;
     const content = document.getElementById('m-content');
     
     let html = "";
-    for(let i=1; i<=50; i++) {
-        const prompt = generateMasterPrompt(p.name);
+    for(let i=1; i<=30; i++) {
+        const pr = generateMasterPrompt(p.name);
         html += `
-            <div class="bg-white/5 p-8 rounded-3xl border border-white/5 hover:border-indigo-500/30 transition-all group">
+            <div class="bg-white/5 p-8 rounded-[2rem] border border-white/5 hover:border-indigo-500/30 transition-all group">
                 <div class="flex justify-between items-center mb-4">
-                    <span class="text-[9px] font-black text-indigo-500 uppercase tracking-widest">Master Neural #${i}</span>
-                    <div class="flex gap-4 opacity-40 group-hover:opacity-100 transition-opacity">
-                        <i onclick="speakText('${prompt}')" class="fas fa-volume-up cursor-pointer hover:text-white"></i>
-                        <i onclick="copyText('${prompt}')" class="fas fa-copy cursor-pointer hover:text-white"></i>
+                    <span class="text-[9px] font-black text-indigo-500 uppercase tracking-widest">Variante Neural #${i}</span>
+                    <div class="flex gap-4 opacity-30 group-hover:opacity-100 transition-all">
+                        <i onclick="speak('${pr}')" class="fas fa-volume-up cursor-pointer hover:text-white"></i>
+                        <i onclick="copy('${pr}')" class="fas fa-copy cursor-pointer hover:text-white"></i>
                     </div>
                 </div>
-                <p class="text-xs text-slate-300 italic">"${prompt}"</p>
+                <p class="text-xs text-slate-300 italic">"${pr}"</p>
             </div>`;
     }
     content.innerHTML = html;
@@ -345,81 +375,120 @@ function openModal(id) {
 }
 
 function generateMasterPrompt(target) {
-    const c = DATA.matrix.concepts[Math.floor(Math.random() * DATA.matrix.concepts.length)];
-    const t = DATA.matrix.tools[Math.floor(Math.random() * DATA.matrix.tools.length)];
-    const v = DATA.matrix.verbs[Math.floor(Math.random() * DATA.matrix.verbs.length)];
-    return `Atue como um ${target} especialista. Utilizando ${c} e a ferramenta ${t}, sua tarefa é ${v} um sistema de alta performance focado em escalabilidade e precisão técnica nível master.`;
+    const c = DB.matrix.concepts[Math.floor(Math.random() * DB.matrix.concepts.length)];
+    const t = DB.matrix.tools[Math.floor(Math.random() * DB.matrix.tools.length)];
+    const a = DB.matrix.actions[Math.floor(Math.random() * DB.matrix.actions.length)];
+    return `Atue como um ${target} nível Sênior. Sua missão é ${a} um projeto utilizando ${c} com a ferramenta ${t}, priorizando máxima performance e escalabilidade técnica.`;
 }
 
-// CHAT ENGINE
-function sendMessage() {
+// CHAT CONSCIÊNCIA
+function handleChat() {
     const input = document.getElementById('chatInput');
-    const box = document.getElementById('chatBox');
     const val = input.value.trim();
     if(!val) return;
 
-    // User Message
-    box.innerHTML += `<div class="flex justify-end"><div class="bg-indigo-600 p-5 rounded-[2rem] rounded-tr-none text-sm font-semibold max-w-[80%] shadow-xl shadow-indigo-900/20">${val}</div></div>`;
+    addMsg("VOCÊ", val);
     input.value = "";
-    box.scrollTop = box.scrollHeight;
-
     document.getElementById('typing').classList.remove('hidden');
 
     setTimeout(() => {
-        document.getElementById('typing').classList.add('hidden');
-        let reply = "";
-        let masterPrompt = null;
+            document.getElementById('typing').classList.add('hidden');
+        let resp = "";
+        let prompt = null;
 
-        const low = val.toLowerCase();
-        if(low.match(/oi|olá|hello|bom dia/)) {
-            reply = "Olá. Conexão neural estabelecida. Sou Lumina, sua consciência de suporte técnico. Como posso elevar seu trabalho hoje?";
+        if(val.toLowerCase().includes("oi")) {
+            resp = state.persona === 'technical' ? "Conexão estabelecida. Sistema pronto para diretrizes." : "Olá! Sinto sua energia criativa hoje. O que vamos idealizar?";
         } else {
-            reply = `Análise concluída para **${val.toUpperCase()}**. Gerando diretriz mestra:`;
-            masterPrompt = generateMasterPrompt(val);
+            resp = "Análise neural completa. Aqui está uma diretriz master baseada no seu comando:";
+            prompt = generateMasterPrompt(val);
         }
 
-        addAiMessage(reply, masterPrompt);
-        saveHistory(val);
-    }, 1200);
+        addAiMsg(resp, prompt);
+        saveMem(val);
+    }, 1500);
 }
 
-function addAiMessage(text, prompt = null) {
+function addMsg(user, text) {
     const box = document.getElementById('chatBox');
+    const side = user === "VOCÊ" ? "justify-end" : "justify-start";
+    const bg = user === "VOCÊ" ? "bg-indigo-600" : "bg-white/5";
+    
     box.innerHTML += `
-        <div class="flex gap-5 animate-in slide-in-from-left-5">
-            <div class="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center shrink-0 shadow-lg"><i class="fas fa-robot"></i></div>
-            <div class="bg-white/5 border border-white/5 p-7 rounded-[2.5rem] rounded-tl-none text-sm leading-relaxed max-w-[85%]">
-                <p>${text}</p>
-                ${prompt ? `<div class="prompt-bubble mt-4">"${prompt}"<div class="mt-3 flex gap-4 text-[10px] text-slate-500 font-black uppercase"><span class="cursor-pointer hover:text-indigo-400" onclick="copyText('${prompt}')"><i class="fas fa-copy mr-1"></i>Copiar</span><span class="cursor-pointer hover:text-indigo-400" onclick="speakText('${prompt}')"><i class="fas fa-volume-up mr-1"></i>Ouvir</span></div></div>` : ''}
+        <div class="flex ${side} animate-in fade-in slide-in-from-bottom-2">
+            <div class="${bg} p-6 rounded-[2rem] ${user==='VOCÊ'?'rounded-tr-none':'rounded-tl-none'} max-w-[80%] shadow-xl">
+                <span class="block text-[8px] font-black opacity-40 uppercase tracking-widest mb-2">${user}</span>
+                <p class="text-sm leading-relaxed">${text}</p>
             </div>
         </div>`;
     box.scrollTop = box.scrollHeight;
 }
 
-// SISTEMA DE UTILITÁRIOS
-function copyText(txt) {
-    navigator.clipboard.writeText(txt);
-    const t = document.getElementById('toast');
-    t.classList.add('opacity-100', 'translate-y-0');
-    setTimeout(() => t.classList.remove('opacity-100', 'translate-y-0'), 2500);
+function addAiMsg(text, prompt = null) {
+    const box = document.getElementById('chatBox');
+    box.innerHTML += `
+        <div class="flex justify-start animate-in fade-in slide-in-from-bottom-2">
+            <div class="bg-white/5 border border-white/5 p-8 rounded-[2.5rem] rounded-tl-none max-w-[85%] shadow-2xl">
+                <span class="block text-[8px] font-black text-indigo-500 uppercase tracking-widest mb-3">LUMINA AI v7</span>
+                <p class="text-sm leading-relaxed">${text}</p>
+                ${prompt ? `<div class="prompt-bubble">"${prompt}"<div class="mt-4 flex gap-6 text-[10px] font-black uppercase text-slate-500"><span class="cursor-pointer hover:text-indigo-400" onclick="copy('${prompt}')"><i class="fas fa-copy mr-2"></i>Copiar</span><span class="cursor-pointer hover:text-indigo-400" onclick="speak('${prompt}')"><i class="fas fa-volume-up mr-2"></i>Ouvir</span></div></div>` : ''}
+            </div>
+        </div>`;
+    box.scrollTop = box.scrollHeight;
 }
 
-function speakText(txt) {
+// UTILITÁRIOS
+function copy(txt) {
+    navigator.clipboard.writeText(txt);
+    const toast = document.getElementById('toast');
+    toast.classList.add('opacity-100', 'translate-y-0');
+    setTimeout(() => toast.classList.remove('opacity-100', 'translate-y-0'), 2500);
+}
+
+function speak(txt) {
     window.speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(txt);
-    u.lang = currentLang;
-    u.rate = 0.9;
+    u.lang = state.lang; u.rate = 0.95;
     window.speechSynthesis.speak(u);
 }
 
-function saveHistory(term) {
-    memory.unshift({ term, time: new Date().toLocaleTimeString() });
-    if(memory.length > 10) memory.pop();
-    localStorage.setItem('lumina_memory', JSON.stringify(memory));
+function saveMem(t) {
+    state.memory.unshift({ t, date: new Date().toLocaleTimeString() });
+    if(state.memory.length > 15) state.memory.pop();
+    localStorage.setItem('lumina_mem', JSON.stringify(state.memory));
     renderHistory();
 }
 
 function renderHistory() {
-    const h = document.getElementById('history');
-    if(memory.length === 0) return;
-    h.inne
+    const list = document.getElementById('history-list');
+    list.innerHTML = state.memory.map(m => `
+        <div class="p-4 bg-white/5 rounded-2xl text-[10px] flex justify-between items-center group hover:bg-white/10 transition-all cursor-default">
+            <span class="font-bold text-slate-400">${m.t}</span>
+            <span class="text-[8px] text-slate-600">${m.date}</span>
+        </div>
+    `).join('');
+}
+
+function setPersona(p) {
+    state.persona = p;
+    document.getElementById('per-technical').classList.toggle('border-indigo-500/40', p==='technical');
+    document.getElementById('per-creative').classList.toggle('border-indigo-500/40', p==='creative');
+}
+
+function setTheme(t) {
+    document.body.className = `theme-${t}`;
+}
+
+function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); }
+function closeModal() { document.getElementById('modal').classList.add('hidden'); }
+function clearMemory() { if(confirm("Zerar consciência local?")) { localStorage.clear(); location.reload(); } }
+function exportData() {
+    const data = JSON.stringify(state);
+    const blob = new Blob([data], {type:'application/json'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `lumina_backup_${Date.now()}.json`;
+    a.click();
+}
+</script>
+</body>
+</html>
