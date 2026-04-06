@@ -1,10 +1,9 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Promptlandia Community PRO</title>
+    <title>Promptlandia - Biblioteca de IA</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -12,8 +11,8 @@
         @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-15px); } }
         .gear-spin { animation: rotate 4s linear infinite; }
         .char-float { animation: float 3s ease-in-out infinite; }
-        .loader-hidden { opacity: 0; visibility: hidden; transition: 0.5s; }
-        .ad-banner { background: linear-gradient(90deg, #1e293b 0%, #334155 100%); border: 1px dashed #475569; }
+        .loader-hidden { opacity: 0; visibility: hidden; transition: 0.5s; pointer-events: none; }
+        body { scroll-behavior: smooth; }
     </style>
 </head>
 <body class="bg-gray-950 text-white min-h-screen font-sans">
@@ -23,17 +22,148 @@
             <i class="fas fa-cog text-gray-800 text-9xl gear-spin absolute"></i>
             <i class="fas fa-user-astronaut text-blue-500 text-5xl char-float absolute"></i>
         </div>
-        <p class="mt-8 text-blue-400 font-bold animate-pulse">CARREGANDO COMUNIDADE...</p>
+        <p class="mt-8 text-blue-400 font-bold animate-pulse tracking-widest text-sm">PREPARANDO AMBIENTE...</p>
     </div>
 
     <div class="max-w-7xl mx-auto p-6">
-        <div class="ad-banner w-full h-20 mb-8 rounded-2xl flex items-center justify-center text-gray-500 text-sm italic">
-            <span># Espaço Publicitário - Anuncie sua ferramenta de IA aqui #</span>
-        </div>
-
         <header class="mb-10 flex flex-col lg:flex-row lg:justify-between lg:items-end gap-6">
             <div>
-                <h1 class="text-5xl font-black bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent italic tracking-tighter">
+                <h1 class="text-5xl font-black bg-gradient-to-r from-blue-400 via-indigo-500 to-purple-500 bg-clip-text text-transparent italic tracking-tighter">
                     PROMPTLANDIA
                 </h1>
-                <p class="text-gray
+                <p class="text-gray-500 font-medium mt-2">Biblioteca gratuita de prompts profissionais para todos.</p>
+            </div>
+            <div class="flex flex-wrap gap-3">
+                <button onclick="inspireMe()" class="bg-indigo-600 hover:bg-indigo-500 px-6 py-3 rounded-2xl font-bold transition-all shadow-lg flex items-center gap-2">
+                    <i class="fas fa-dice"></i> Modo Inspirar
+                </button>
+                <button onclick="document.getElementById('modalAdd').classList.remove('hidden')" class="bg-gray-800 hover:bg-gray-700 px-6 py-3 rounded-2xl font-bold transition-all border border-gray-700 flex items-center gap-2">
+                    <i class="fas fa-plus text-green-400"></i> Novo Prompt
+                </button>
+            </div>
+        </header>
+        
+        <div class="relative mb-12">
+            <i class="fas fa-search absolute left-5 top-1/2 -translate-y-1/2 text-gray-500 text-xl"></i>
+            <input id="search" oninput="render()" type="text" placeholder="Pesquise por uma profissão ou tema..." 
+                class="w-full p-6 pl-16 rounded-3xl bg-gray-900 border border-gray-800 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all text-xl shadow-inner">
+        </div>
+
+        <div id="grid" class="grid md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
+    </div>
+
+    <div id="modalCompare" class="fixed inset-0 bg-black/90 backdrop-blur-md hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-gray-900 border border-gray-800 w-full max-w-5xl max-h-[90vh] overflow-y-auto rounded-3xl p-8">
+            <div class="flex justify-between items-center mb-8 border-b border-gray-800 pb-4">
+                <h2 class="text-2xl font-bold flex items-center gap-3"><i class="fas fa-robot text-indigo-400"></i> Comportamento dos Modelos</h2>
+                <button onclick="closeCompare()" class="text-gray-500 hover:text-white text-3xl">&times;</button>
+            </div>
+            <div class="grid md:grid-cols-3 gap-6" id="compare-content">
+                </div>
+        </div>
+    </div>
+
+    <div id="modalAdd" class="fixed inset-0 bg-black/80 hidden flex items-center justify-center z-50 p-4">
+        <div class="bg-gray-900 p-8 rounded-3xl border border-gray-800 w-full max-w-md shadow-2xl">
+            <h2 class="text-2xl font-bold mb-6 text-indigo-400">Adicionar à Biblioteca</h2>
+            <div class="space-y-4">
+                <input id="newName" type="text" placeholder="Nome da Profissão/Título" class="w-full p-4 rounded-xl bg-gray-800 border border-gray-700 outline-none focus:border-indigo-500 transition-all">
+                <textarea id="newPrompt" rows="4" placeholder="Escreva o seu prompt aqui..." class="w-full p-4 rounded-xl bg-gray-800 border border-gray-700 outline-none focus:border-indigo-500 transition-all"></textarea>
+                <div class="flex gap-2">
+                    <button onclick="saveNewPrompt()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 py-4 rounded-xl font-bold transition-all shadow-lg">Salvar</button>
+                    <button onclick="document.getElementById('modalAdd').classList.add('hidden')" class="flex-1 bg-gray-800 hover:bg-gray-700 py-4 rounded-xl font-bold">Cancelar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+window.addEventListener("load", () => setTimeout(() => document.getElementById("loader").classList.add("loader-hidden"), 1200));
+
+let prompts = JSON.parse(localStorage.getItem('prompts')) || [
+    { name:"Desenvolvedor", category:"Tecnologia", prompt:"Aja como um desenvolvedor Full Stack experiente. Refatore o código abaixo para melhorar a legibilidade e a performance: [COLE O CÓDIGO]." },
+    { name:"Psicólogo", category:"Saúde", prompt:"Aja como um terapeuta cognitivo-comportamental. Ajude-me a identificar e desafiar pensamentos automáticos negativos sobre: [SITUAÇÃO]." },
+    { name:"Social Media", category:"Marketing", prompt:"Crie um calendário de postagens de 15 dias para uma marca de [NICHO], focando em autoridade e engajamento orgânico." },
+    { name:"Nutricionista", category:"Bem-estar", prompt:"Aja como um nutricionista funcional. Monte uma lista de compras para uma semana focada em alimentos anti-inflamatórios." }
+];
+
+function render() {
+    const searchVal = document.getElementById('search').value.toLowerCase();
+    const grid = document.getElementById('grid');
+    grid.innerHTML = "";
+    
+    prompts.filter(p => p.name.toLowerCase().includes(searchVal)).forEach((p, i) => {
+        grid.innerHTML += `
+            <div class="bg-gray-900 p-8 rounded-[2rem] border border-gray-800 hover:border-indigo-500/40 transition-all shadow-xl group">
+                <span class="text-[10px] font-black uppercase text-indigo-400 bg-indigo-900/20 px-3 py-1 rounded-full mb-3 inline-block">${p.category || 'Geral'}</span>
+                <h2 class="text-2xl font-bold mb-6 group-hover:text-white transition-colors">${p.name}</h2>
+                <div class="flex flex-col gap-3">
+                    <button onclick="copy('${p.prompt.replace(/'/g, "\\'")}', this)" class="bg-indigo-600 hover:bg-indigo-500 py-4 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all active:scale-95 shadow-md">
+                        <i class="fas fa-copy"></i> Copiar Prompt
+                    </button>
+                    <button onclick="openCompare('${p.name}')" class="bg-gray-800 hover:bg-gray-700 py-3 rounded-2xl font-bold flex items-center justify-center gap-2 text-xs transition-all text-gray-400 border border-gray-700 uppercase tracking-widest">
+                        <i class="fas fa-columns"></i> Comparar IA's
+                    </button>
+                </div>
+            </div>`;
+    });
+}
+
+function openCompare(name) {
+    document.getElementById('modalCompare').classList.remove('hidden');
+    const content = document.getElementById('compare-content');
+    content.innerHTML = `
+        <div class="p-6 bg-gray-800/40 rounded-2xl border border-gray-700">
+            <h3 class="text-green-400 font-bold mb-3 flex items-center gap-2"><i class="fas fa-bolt text-xs"></i> GPT-4o</h3>
+            <p class="text-sm text-gray-400 leading-relaxed">Resposta direta, lógica e altamente eficiente para tarefas de ${name}.</p>
+        </div>
+        <div class="p-6 bg-gray-800/40 rounded-2xl border border-gray-700">
+            <h3 class="text-blue-400 font-bold mb-3 flex items-center gap-2"><i class="fas fa-star text-xs"></i> Gemini 1.5</h3>
+            <p class="text-sm text-gray-400 leading-relaxed">Excelente para pesquisas amplas e raciocínio multimodal sobre ${name}.</p>
+        </div>
+        <div class="p-6 bg-gray-800/40 rounded-2xl border border-gray-700">
+            <h3 class="text-orange-400 font-bold mb-3 flex items-center gap-2"><i class="fas fa-feather text-xs"></i> Claude 3.5</h3>
+            <p class="text-sm text-gray-400 leading-relaxed">Melhor para tons humanizados, escrita criativa e precisão em ${name}.</p>
+        </div>
+    `;
+}
+
+function closeCompare() { document.getElementById('modalCompare').classList.add('hidden'); }
+
+function inspireMe() {
+    const creative = [
+        { name: "Escritor Sci-Fi", category: "Criativo", prompt: "Aja como um escritor de ficção científica premiado. Descreva um mundo onde a música é a única fonte de energia." },
+        { name: "Mestre de RPG", category: "Games", prompt: "Crie uma missão épica para um grupo de nível 5 em um cenário de fantasia sombria, incluindo NPCs e reviravoltas." }
+    ];
+    const item = creative[Math.floor(Math.random() * creative.length)];
+    prompts.unshift(item);
+    render();
+}
+
+function saveNewPrompt() {
+    const name = document.getElementById('newName').value;
+    const txt = document.getElementById('newPrompt').value;
+    if(name && txt) {
+        prompts.unshift({ name, category: "Manual", prompt: txt });
+        localStorage.setItem('prompts', JSON.stringify(prompts));
+        render();
+        document.getElementById('modalAdd').classList.add('hidden');
+    }
+}
+
+function copy(text, btn) {
+    navigator.clipboard.writeText(text);
+    const old = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-check"></i> Copiado!';
+    btn.classList.replace('bg-indigo-600', 'bg-green-600');
+    setTimeout(() => {
+        btn.innerHTML = old;
+        btn.classList.replace('bg-green-600', 'bg-indigo-600');
+    }, 2000);
+}
+
+render();
+</script>
+</body>
+    </html>
+    
