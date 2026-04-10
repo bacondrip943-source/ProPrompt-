@@ -1,116 +1,242 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <title>StickerAI</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StickerAI Pro</title>
 
-  <style>
-    body {
-      margin: 0;
-      font-family: Arial;
-      background: #0d0d0d;
-      color: #fff;
-      display: flex;
-      justify-content: center;
-    }
+<style>
+body {
+  margin: 0;
+  font-family: Arial;
+  background: #0d0d0d;
+  color: #fff;
+  display: flex;
+  justify-content: center;
+}
 
-    .app {
-      max-width: 500px;
-      width: 100%;
-      padding: 20px;
-    }
+.app {
+  max-width: 500px;
+  width: 100%;
+  padding: 20px;
+}
 
-    h1 {
-      text-align: center;
-    }
+h1 {
+  text-align: center;
+  font-size: 28px;
+}
 
-    input {
-      width: 100%;
-      padding: 12px;
-      border-radius: 10px;
-      border: none;
-      background: #1a1a1a;
-      color: white;
-      margin-bottom: 10px;
-    }
+input {
+  width: 100%;
+  padding: 14px;
+  border-radius: 12px;
+  border: none;
+  background: #1a1a1a;
+  color: white;
+  margin-bottom: 10px;
+}
 
-    button {
-      width: 100%;
-      padding: 14px;
-      border-radius: 10px;
-      border: none;
-      background: #00ffaa;
-      font-weight: bold;
-      cursor: pointer;
-      margin-bottom: 10px;
-    }
+button {
+  width: 100%;
+  padding: 14px;
+  border-radius: 12px;
+  border: none;
+  background: #00ffaa;
+  font-weight: bold;
+  cursor: pointer;
+  margin-bottom: 10px;
+  transition: 0.2s;
+}
 
-    button:active {
-      opacity: 0.7;
-    }
+button:disabled {
+  opacity: 0.5;
+}
 
-    .preview {
-      width: 250px;
-      height: 250px;
-      margin: 20px auto;
-      border: 5px solid white;
-      border-radius: 20px;
-      background: #fff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
+.preview {
+  width: 260px;
+  height: 260px;
+  margin: 20px auto;
+  border: 5px solid white;
+  border-radius: 20px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
-    img {
-      max-width: 100%;
-      max-height: 100%;
-    }
+.preview img {
+  max-width: 100%;
+  max-height: 100%;
+}
 
-    .history {
-      display: flex;
-      gap: 10px;
-      overflow-x: auto;
-    }
+.history {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+}
 
-    .history img {
-      width: 80px;
-      border-radius: 10px;
-      cursor: pointer;
-    }
+.history img {
+  width: 80px;
+  border-radius: 10px;
+  cursor: pointer;
+}
 
-    .status {
-      text-align: center;
-      margin-top: 10px;
-    }
-  </style>
+.status {
+  text-align: center;
+  margin-top: 10px;
+  font-size: 14px;
+}
+</style>
 </head>
 
 <body>
-  <div class="app">
-    <h1>StickerAI 🎨</h1>
 
-    <input id="prompt" placeholder="Descreva seu sticker..." />
+<div class="app">
+  <h1>StickerAI 🎨</h1>
 
-    <button onclick="generate()">Gerar Sticker</button>
+  <input id="prompt" placeholder="Ex: cachorro gamer estilo sticker" />
 
-    <div class="status" id="status"></div>
+  <button id="generateBtn" onclick="generate()">Gerar Sticker</button>
 
-    <div class="preview" id="preview"></div>
+  <div class="status" id="status"></div>
 
-    <button onclick="downloadImage()">Salvar</button>
+  <div class="preview" id="preview"></div>
 
-    <h3>Histórico</h3>
-    <div class="history" id="history"></div>
-  </div>
+  <button onclick="download()">Salvar</button>
+  <button onclick="share()">Compartilhar</button>
+
+  <h3>Histórico</h3>
+  <div class="history" id="history"></div>
+</div>
 
 <script>
-const API_URL = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-2-1";
-const TOKEN = "SEU_TOKEN_AQUI";
-
 let currentImage = null;
+let isLoading = false;
+
+const messages = [
+  "Desenhando...",
+  "Aplicando estilo...",
+  "Finalizando arte...",
+  "Criando borda..."
+];
 
 // =========================
-// GERAR IMAGEM
+// GERAR IMAGEM (ROBUSTO)
 // =========================
-async function generate()
+async function generate() {
+  if (isLoading) return;
+
+  const prompt = document.getElementById("prompt").value;
+  if (!prompt) return alert("Digite algo!");
+
+  isLoading = true;
+  document.getElementById("generateBtn").disabled = true;
+
+  let i = 0;
+  const statusEl = document.getElementById("status");
+
+  const interval = setInterval(() => {
+    statusEl.innerText = messages[i % messages.length];
+    i++;
+  }, 1200);
+
+  try {
+    const finalPrompt = `${prompt}, die-cut sticker, white outline, vector art, flat design, centered, high quality`;
+
+    const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(finalPrompt)}`;
+
+    const response = await fetch(url);
+    const blob = await response.blob();
+
+    const objectURL = URL.createObjectURL(blob);
+    currentImage = objectURL;
+
+    const img = new Image();
+    img.src = objectURL;
+
+    img.onload = () => {
+      document.getElementById("preview").innerHTML = "";
+      document.getElementById("preview").appendChild(img);
+
+      saveHistory(objectURL);
+      statusEl.innerText = "Pronto!";
+    };
+
+  } catch (err) {
+    statusEl.innerText = "Erro ao gerar imagem";
+  } finally {
+    clearInterval(interval);
+    isLoading = false;
+    document.getElementById("generateBtn").disabled = false;
+  }
+}
+
+// =========================
+// DOWNLOAD REAL (BLOB)
+// =========================
+function download() {
+  if (!currentImage) return;
+
+  const a = document.createElement("a");
+  a.href = currentImage;
+  a.download = "sticker.png";
+  a.click();
+}
+
+// =========================
+// COMPARTILHAR
+// =========================
+async function share() {
+  if (!currentImage) return;
+
+  try {
+    if (navigator.share) {
+      await navigator.share({
+        title: "StickerAI",
+        text: "Olha meu sticker!",
+        url: currentImage
+      });
+    } else {
+      alert("Compartilhamento não suportado");
+    }
+  } catch {}
+}
+
+// =========================
+// HISTÓRICO PROFISSIONAL
+// =========================
+function saveHistory(img) {
+  let history = JSON.parse(localStorage.getItem("history")) || [];
+
+  history.unshift(img);
+  history = [...new Set(history)].slice(0, 10);
+
+  localStorage.setItem("history", JSON.stringify(history));
+
+  renderHistory();
+}
+
+function renderHistory() {
+  const container = document.getElementById("history");
+  container.innerHTML = "";
+
+  const history = JSON.parse(localStorage.getItem("history")) || [];
+
+  history.forEach((img) => {
+    const el = document.createElement("img");
+    el.src = img;
+
+    el.onclick = () => {
+      document.getElementById("preview").innerHTML = `<img src="${img}" />`;
+      currentImage = img;
+    };
+
+    container.appendChild(el);
+  });
+}
+
+renderHistory();
+</script>
+
+</body>
+</html>
