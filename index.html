@@ -1,285 +1,360 @@
-<!DOCTYPE html>
-<html lang="pt-BR" class="dark">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lumina Neural OS | v8.0 Omega</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    
-    <style>
-        :root {
-            --p-color: #6366f1;
-            --p-glow: rgba(99, 102, 241, 0.4);
-            --bg-main: #020617;
-            --surface: #0f172a;
-            --header-h: 85px;
+// ==========================
+// IMPORTS ORGANIZADOS
+// ==========================
+import React, { useState, useEffect, useCallback } from "react";
+import {
+  SafeAreaView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  Image,
+  FlatList,
+  KeyboardAvoidingView,
+  Platform,
+  ActivityIndicator,
+  Alert,
+} from "react-native";
+
+import styled, { ThemeProvider } from "styled-components/native";
+
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
+import * as FileSystem from "expo-file-system";
+import * as MediaLibrary from "expo-media-library";
+import * as Sharing from "expo-sharing";
+import * as ImageManipulator from "expo-image-manipulator";
+import * as Haptics from "expo-haptics";
+
+// ==========================
+// CONFIG
+// ==========================
+const HUGGING_FACE_TOKEN = "SEU_TOKEN_AQUI";
+const API_URL =
+  "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-2-1";
+
+const HISTORY_KEY = "@sticker_history";
+
+// ==========================
+// TEMA DARK MODE
+// ==========================
+const theme = {
+  bg: "#0D0D0D",
+  card: "#1A1A1A",
+  text: "#FFFFFF",
+  accent: "#00FFAA",
+};
+
+// ==========================
+// STYLED COMPONENTS
+// ==========================
+const Container = styled(SafeAreaView)`
+  flex: 1;
+  background: ${(p) => p.theme.bg};
+`;
+
+const Content = styled(KeyboardAvoidingView)`
+  flex: 1;
+  padding: 16px;
+`;
+
+const Title = styled(Text)`
+  color: ${(p) => p.theme.text};
+  font-size: 26px;
+  font-weight: bold;
+  margin-bottom: 10px;
+`;
+
+const Input = styled(TextInput)`
+  background: ${(p) => p.theme.card};
+  color: ${(p) => p.theme.text};
+  padding: 12px;
+  border-radius: 10px;
+  margin-bottom: 10px;
+`;
+
+const Button = styled(TouchableOpacity)`
+  background: ${(p) => p.theme.accent};
+  padding: 14px;
+  border-radius: 10px;
+  align-items: center;
+  margin-bottom: 10px;
+`;
+
+const ButtonText = styled(Text)`
+  color: #000;
+  font-weight: bold;
+`;
+
+const Preview = styled(Image)`
+  width: 250px;
+  height: 250px;
+  align-self: center;
+  margin-vertical: 20px;
+  border-width: 5px;
+  border-color: #fff;
+  border-radius: 20px;
+`;
+
+const HistoryImage = styled(Image)`
+  width: 80px;
+  height: 80px;
+  margin-right: 10px;
+  border-radius: 10px;
+`;
+
+// ==========================
+// HOOK CUSTOMIZADO
+// ==========================
+const useStickerGenerator = () => {
+  const [loading, setLoading] = useState(false);
+  const [image, setImage] = useState(null);
+  const [status, setStatus] = useState("");
+
+  const generateSticker = useCallback(async (userPrompt) => {
+    if (!userPrompt) return;
+
+    const wrappedPrompt = `(${userPrompt}), die-cut sticker, white outline, thick border, vector art, flat design, white background, high resolution, centered, 2D vector, professional sticker aesthetic, isolated on white`;
+
+    setLoading(true);
+    setStatus("Desenhando...");
+
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 30000);
+
+      const response = await fetch(API_URL, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${HUGGING_FACE_TOKEN}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ inputs: wrappedPrompt }),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeout);
+
+      // MODELO CARREGANDO (503)
+      if (response.status === 503) {
+        setStatus("Aquecendo motores da IA...");
+        setTimeout(() => generateSticker(userPrompt), 4000);
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error("Erro na API");
+      }
+
+      const blob = await response.blob();
+
+      // ==========================
+      // CONVERSÃO BLOB → BASE64
+      // Necessário pois o React Native Image não aceita blob diretamente
+      // ==========================
+      const reader = new FileReader();
+
+      const base64 = await new Promise((resolve, reject) => {
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+
+      setImage(base64);
+      setStatus("Aplicando bordas...");
+    } catch (err) {
+      if (err.name === "AbortError") {
+        Alert.alert("Timeout", "A IA demorou demais para responder.");
+      } else {
+        Alert.alert("Erro", "Falha ao gerar imagem.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  return { generateSticker, loading, image, status };
+};
+
+// ==========================
+// APP PRINCIPAL
+// ==========================
+export default function App() {
+  const { generateSticker, loading, image, status } =
+    useStickerGenerator();
+
+  const [prompt, setPrompt] = useState("");
+  const [history, setHistory] = useState([]);
+
+  // ==========================
+  // CARREGAR HISTÓRICO
+  // ==========================
+  useEffect(() => {
+    loadHistory();
+  }, []);
+
+  const loadHistory = async () => {
+    try {
+      const data = await AsyncStorage.getItem(HISTORY_KEY);
+      if (data) setHistory(JSON.parse(data));
+    } catch (e) {
+      console.log(e);
+    }
+  };
+
+  // ==========================
+  // SALVAR HISTÓRICO
+  // ==========================
+  const saveToHistory = async (img) => {
+    try {
+      let updated = [img, ...history];
+
+      // evitar duplicados
+      updated = updated.filter(
+        (item, index, self) =>
+          index === self.findIndex((t) => t === item)
+      );
+
+      updated = updated.slice(0, 10);
+
+      setHistory(updated);
+      await AsyncStorage.setItem(HISTORY_KEY, JSON.stringify(updated));
+    } catch (e) {
+      console.log(e);
+    }
+  };
+
+  // ==========================
+  // SALVAR NA GALERIA
+  // ==========================
+  const saveImage = async () => {
+    try {
+      const { status } = await MediaLibrary.requestPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert("Permissão negada");
+        return;
+      }
+
+      // ==========================
+      // writeAsStringAsync:
+      // salva base64 como arquivo físico no sistema
+      // ==========================
+      const fileUri =
+        FileSystem.cacheDirectory + `sticker-${Date.now()}.png`;
+
+      await FileSystem.writeAsStringAsync(
+        fileUri,
+        image.replace(/^data:image\/\w+;base64,/, ""),
+        {
+          encoding: FileSystem.EncodingType.Base64,
         }
+      );
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
-            font-family: 'Plus Jakarta Sans', sans-serif; 
-            background-color: var(--bg-main); 
-            color: #f8fafc;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden; 
+      // remover fundo (placeholder)
+      const processed = await ImageManipulator.manipulateAsync(
+        fileUri,
+        [{ resize: { width: 512, height: 512 } }],
+        { compress: 1, format: ImageManipulator.SaveFormat.PNG }
+      );
+
+      await MediaLibrary.createAssetAsync(processed.uri);
+
+      saveToHistory(image);
+
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+      Alert.alert("Salvo!", "Sticker salvo na galeria.");
+    } catch (e) {
+      Alert.alert("Erro", "Não foi possível salvar.");
+    }
+  };
+
+  // ==========================
+  // COMPARTILHAR
+  // ==========================
+  const shareImage = async () => {
+    try {
+      const fileUri =
+        FileSystem.cacheDirectory + `share-${Date.now()}.png`;
+
+      await FileSystem.writeAsStringAsync(
+        fileUri,
+        image.replace(/^data:image\/\w+;base64,/, ""),
+        {
+          encoding: FileSystem.EncodingType.Base64,
         }
+      );
 
-        /* HEADER ESTRUTURADO */
-        .app-header {
-            height: var(--header-h);
-            background: rgba(2, 6, 23, 0.98);
-            backdrop-filter: blur(20px);
-            border-bottom: 1px solid rgba(255,255,255,0.08);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 2rem;
-            z-index: 1000;
-            flex-shrink: 0;
-        }
+      await Sharing.shareAsync(fileUri);
+    } catch (e) {
+      Alert.alert("Erro ao compartilhar");
+    }
+  };
 
-        /* CONTEÚDO */
-        .main-content {
-            flex-grow: 1;
-            overflow-y: auto;
-            position: relative;
-            padding: 2rem;
-        }
+  // ==========================
+  // UI
+  // ==========================
+  return (
+    <ThemeProvider theme={theme}>
+      <Container>
+        <Content behavior={Platform.OS === "ios" ? "padding" : undefined}>
+          <Title>StickerAI 🎨</Title>
 
-        .view-section { display: none; max-width: 1300px; margin: 0 auto; animation: fadeInUp 0.5s ease; }
-        .view-section.active { display: block; }
+          <Input
+            placeholder="Descreva seu sticker..."
+            placeholderTextColor="#777"
+            value={prompt}
+            onChangeText={setPrompt}
+          />
 
-        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+          <Button
+            activeOpacity={0.7}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              generateSticker(prompt);
+            }}
+          >
+            <ButtonText>Gerar Sticker</ButtonText>
+          </Button>
 
-        /* IA CHAT WRAPPER */
-        .ia-wrapper {
-            height: calc(100vh - var(--header-h) - 120px);
-            background: rgba(15, 23, 42, 0.6);
-            border-radius: 3rem;
-            border: 1px solid rgba(255,255,255,0.05);
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            box-shadow: 0 30px 60px -12px rgba(0,0,0,0.7);
-        }
+          {loading && (
+            <>
+              <ActivityIndicator size="large" color="#00FFAA" />
+              <Text style={{ color: "#fff", textAlign: "center" }}>
+                {status}
+              </Text>
+            </>
+          )}
 
-        #chatBox { flex-grow: 1; overflow-y: auto; padding: 2.5rem; scroll-behavior: smooth; }
-        .chat-scroll::-webkit-scrollbar { width: 4px; }
-        .chat-scroll::-webkit-scrollbar-thumb { background: var(--p-color); border-radius: 10px; }
+          {image && <Preview source={{ uri: image }} />}
 
-        /* CARDS */
-        .card-prof {
-            background: var(--surface);
-            padding: 2.5rem;
-            border-radius: 2.5rem;
-            border: 1px solid rgba(255,255,255,0.03);
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            text-align: center;
-            cursor: pointer;
-        }
-        .card-prof:hover { border-color: var(--p-color); transform: scale(1.05); background: #1e1b4b; }
+          {image && (
+            <>
+              <Button onPress={saveImage}>
+                <ButtonText>Salvar</ButtonText>
+              </Button>
 
-        /* LOADER GATILHO */
-        #loader {
-            position: fixed; inset: 0; z-index: 9999; background: #020617;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-        }
+              <Button onPress={shareImage}>
+                <ButtonText>Compartilhar</ButtonText>
+              </Button>
+            </>
+          )}
 
-        /* FLOATING ACTION */
-        .fab {
-            position: fixed; bottom: 2rem; right: 2rem;
-            width: 4rem; height: 4rem; border-radius: 1.5rem;
-            background: var(--p-color); display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 10px 20px var(--p-glow); cursor: pointer; z-index: 500;
-            transition: 0.3s;
-        }
-        .fab:hover { transform: rotate(90deg) scale(1.1); }
-    </style>
-</head>
-<body>
+          <Text style={{ color: "#fff", marginTop: 10 }}>
+            Histórico:
+          </Text>
 
-    <div id="loader">
-        <div class="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-6"></div>
-        <p id="boot-text" class="text-[10px] font-black uppercase tracking-[0.5em] text-indigo-400">Iniciando Protocolos...</p>
-    </div>
-
-    <header class="app-header">
-        <div class="flex items-center gap-6">
-            <h1 class="text-2xl font-black italic tracking-tighter">LUMINA<span class="text-indigo-500 text-3xl">.</span></h1>
-        </div>
-
-        <nav class="flex bg-slate-900/80 p-1 rounded-2xl border border-white/5">
-            <button onclick="changeTab('db')" id="t-db" class="px-8 py-2.5 rounded-xl text-[10px] font-black uppercase transition-all bg-indigo-600">Database</button>
-            <button onclick="changeTab('ia')" id="t-ia" class="px-8 py-2.5 rounded-xl text-[10px] font-black uppercase transition-all text-slate-400">Interface IA</button>
-        </nav>
-
-        <div class="flex items-center gap-4">
-            <select id="lang" class="bg-slate-900 text-[10px] font-black p-2 rounded-xl border border-white/10 outline-none">
-                <option value="pt">🇧🇷 PT</option>
-                <option value="en">🇺🇸 EN</option>
-                <option value="es">🇪🇸 ES</option>
-                <option value="ja">🇯🇵 JA</option>
-            </select>
-        </div>
-    </header>
-
-    <main class="main-content">
-        <section id="view-db" class="view-section active">
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8" id="grid"></div>
-        </section>
-
-        <section id="view-ia" class="view-section">
-            <div class="ia-wrapper max-w-4xl mx-auto">
-                <div id="chatBox" class="chat-scroll space-y-6"></div>
-                <div class="p-6 bg-slate-950/50 border-t border-white/5">
-                    <div class="flex gap-4 bg-slate-900 p-2 rounded-2xl border border-white/10">
-                        <input type="text" id="chatIn" placeholder="Comando neural..." class="flex-grow bg-transparent px-4 text-sm outline-none" onkeypress="if(event.key==='Enter') sendChat()">
-                        <button onclick="sendChat()" class="w-12 h-12 bg-indigo-600 rounded-xl flex items-center justify-center hover:bg-indigo-500 shadow-lg shadow-indigo-600/20 transition-all">
-                            <i class="fas fa-paper-plane text-xs"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </section>
-    </main>
-
-    <div class="fab" onclick="randomPrompt()" title="Prompt Aleatório">
-        <i class="fas fa-dice-five text-xl text-white"></i>
-    </div>
-
-    <div id="modal" class="fixed inset-0 z-[2000] bg-black/90 backdrop-blur-xl hidden flex items-center justify-center p-6">
-        <div class="bg-slate-900 w-full max-w-5xl max-h-[85vh] rounded-[3rem] border border-white/10 flex flex-col relative overflow-hidden shadow-2xl">
-            <button onclick="closeModal()" class="absolute top-8 right-8 text-2xl text-slate-500 hover:text-white">&times;</button>
-            <div class="p-12 border-b border-white/5 bg-slate-950/20">
-                <h2 id="m-title" class="text-4xl font-black italic tracking-tighter uppercase"></h2>
-            </div>
-            <div id="m-content" class="flex-1 overflow-y-auto p-12 space-y-6 chat-scroll"></div>
-        </div>
-    </div>
-
-    <script>
-        // CONFIGURAÇÕES DE GERAÇÃO (DIFERENTES CADA UM)
-        const MATRIZ = {
-            personas: ["Especialista Sênior", "Arquiteto de Soluções", "Consultor Master", "Analista Crítico", "Visionário"],
-            acoes: ["desenvolva um plano para", "otimize o fluxo de trabalho de", "projete uma arquitetura para", "avalie a escalabilidade de"],
-            contextos: ["focado em performance extrema", "considerando segurança cibernética", "aplicando inteligência artificial", "usando metodologias ágeis"],
-            ferramentas: ["Stack moderna", "Tecnologia de ponta", "Sistemas distribuídos", "Infraestrutura Cloud"]
-        };
-
-        const PROFESSOES = [
-            { name: "Prompt Engineer", icon: "fa-terminal" },
-            { name: "Dev Full-Stack", icon: "fa-code" },
-            { name: "Data Scientist", icon: "fa-brain" },
-            { name: "Gestor Ágil", icon: "fa-rocket" },
-            { name: "UX Designer", icon: "fa-pen-nib" },
-            { name: "Cibersegurança", icon: "fa-shield-halved" },
-            { name: "Advogado", icon: "fa-gavel" },
-            { name: "Eng. de IA", icon: "fa-robot" }
-        ];
-
-        // GATILHO DE BOOT
-        document.addEventListener("DOMContentLoaded", () => {
-            const bt = document.getElementById('boot-text');
-            setTimeout(() => bt.innerText = "Carregando IA...", 400);
-            setTimeout(() => bt.innerText = "Sincronizando Prompts...", 800);
-            setTimeout(() => {
-                document.getElementById('loader').style.display = 'none';
-                init();
-            }, 1200);
-        });
-
-        function init() {
-            renderGrid();
-            addMsg("IA", "Consciência Lumina v8.0 Ativa. Prompts Master diferenciados e Interface de IA restaurados. Como vamos evoluir hoje?");
-        }
-
-        function renderGrid() {
-            const grid = document.getElementById('grid');
-            grid.innerHTML = PROFESSOES.map((p, i) => `
-                <div class="card-prof" onclick="openModal('${p.name}')">
-                    <i class="fas ${p.icon} text-3xl text-indigo-500 mb-6 block"></i>
-                    <h3 class="text-xs font-black uppercase tracking-widest">${p.name}</h3>
-                </div>
-            `).join('');
-        }
-
-        // GERAÇÃO DE PROMPTS ÚNICOS
-        function generateUniquePrompt(base) {
-            const per = MATRIZ.personas[Math.floor(Math.random() * MATRIZ.personas.length)];
-            const aco = MATRIZ.acoes[Math.floor(Math.random() * MATRIZ.acoes.length)];
-            const ctx = MATRIZ.contextos[Math.floor(Math.random() * MATRIZ.contextos.length)];
-            const fer = MATRIZ.ferramentas[Math.floor(Math.random() * MATRIZ.ferramentas.length)];
-            return `Atue como um ${per} em ${base}. Sua tarefa é ${aco} um sistema ${ctx}, utilizando ${fer} para garantir um resultado nível Master.`;
-        }
-
-        function openModal(title) {
-            document.getElementById('m-title').innerText = title;
-            const cont = document.getElementById('m-content');
-            let html = "";
-            for(let i=1; i<=20; i++) {
-                const p = generateUniquePrompt(title);
-                html += `
-                    <div class="bg-white/5 p-8 rounded-[2.5rem] border border-white/5 hover:border-indigo-500/30 transition-all group">
-                        <div class="flex justify-between mb-4">
-                            <span class="text-[9px] font-black text-indigo-500 uppercase tracking-widest">Prompt Único #${i}</span>
-                            <i class="fas fa-copy text-slate-600 cursor-pointer hover:text-white" onclick="copy('${p}')"></i>
-                        </div>
-                        <p class="text-sm italic text-slate-300">"${p}"</p>
-                    </div>`;
-            }
-            cont.innerHTML = html;
-            document.getElementById('modal').classList.remove('hidden');
-        }
-
-        function randomPrompt() {
-            const randomProf = PROFESSOES[Math.floor(Math.random() * PROFESSOES.length)].name;
-            const p = generateUniquePrompt(randomProf);
-            changeTab('ia');
-            addMsg("SISTEMA", `Prompt Aleatório Gerado para ${randomProf}:`);
-            addMsg("IA", p);
-        }
-
-        function changeTab(tab) {
-            document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
-            document.getElementById(`view-${tab}`).classList.add('active');
-            
-            document.getElementById('t-db').className = tab === 'db' ? 'px-8 py-2.5 rounded-xl text-[10px] font-black uppercase transition-all bg-indigo-600' : 'px-8 py-2.5 rounded-xl text-[10px] font-black uppercase transition-all text-slate-400';
-            document.getElementById('t-ia').className = tab === 'ia' ? 'px-8 py-2.5 rounded-xl text-[10px] font-black uppercase transition-all bg-indigo-600' : 'px-8 py-2.5 rounded-xl text-[10px] font-black uppercase transition-all text-slate-400';
-        }
-
-        function sendChat() {
-            const input = document.getElementById('chatIn');
-            if(!input.value) return;
-            addMsg("VOCÊ", input.value);
-            const val = input.value;
-            input.value = "";
-            
-            setTimeout(() => {
-                addMsg("IA", `Processando comando neural para: **${val}**. Analisando matriz de dados...`);
-            }, 800);
-        }
-
-        function addMsg(user, text) {
-            const box = document.getElementById('chatBox');
-            const side = user === "VOCÊ" ? "justify-end" : "justify-start";
-            const bg = user === "VOCÊ" ? "bg-indigo-600" : "bg-white/5";
-            
-            box.innerHTML += `
-                <div class="flex ${side} animate-in fade-in">
-                    <div class="${bg} p-6 rounded-[2rem] max-w-[85%] text-sm shadow-xl">
-                        <span class="block text-[8px] font-black opacity-40 uppercase mb-2">${user}</span>
-                        ${text}
-                    </div>
-                </div>`;
-            box.scrollTop = box.scrollHeight;
-        }
-
-        function closeModal() { document.getElementById('modal').classList.add('hidden'); }
-        function copy(t) { navigator.clipboard.writeText(t); alert("Copiado!"); }
-    </script>
-</body>
-</html>
+          <FlatList
+            horizontal
+            data={history}
+            keyExtractor={(item, index) => index.toString()}
+            renderItem={({ item }) => (
+              <TouchableOpacity onPress={() => setPrompt("")}>
+                <HistoryImage source={{ uri: item }} />
+              </TouchableOpacity>
+            )}
+          />
+        </Content>
+      </Container>
+    </ThemeProvider>
+  );
+}
