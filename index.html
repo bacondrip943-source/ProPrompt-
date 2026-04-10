@@ -1,360 +1,116 @@
-// ==========================
-// IMPORTS ORGANIZADOS
-// ==========================
-import React, { useState, useEffect, useCallback } from "react";
-import {
-  SafeAreaView,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  Image,
-  FlatList,
-  KeyboardAvoidingView,
-  Platform,
-  ActivityIndicator,
-  Alert,
-} from "react-native";
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>StickerAI</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 
-import styled, { ThemeProvider } from "styled-components/native";
-
-import AsyncStorage from "@react-native-async-storage/async-storage";
-
-import * as FileSystem from "expo-file-system";
-import * as MediaLibrary from "expo-media-library";
-import * as Sharing from "expo-sharing";
-import * as ImageManipulator from "expo-image-manipulator";
-import * as Haptics from "expo-haptics";
-
-// ==========================
-// CONFIG
-// ==========================
-const HUGGING_FACE_TOKEN = "SEU_TOKEN_AQUI";
-const API_URL =
-  "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-2-1";
-
-const HISTORY_KEY = "@sticker_history";
-
-// ==========================
-// TEMA DARK MODE
-// ==========================
-const theme = {
-  bg: "#0D0D0D",
-  card: "#1A1A1A",
-  text: "#FFFFFF",
-  accent: "#00FFAA",
-};
-
-// ==========================
-// STYLED COMPONENTS
-// ==========================
-const Container = styled(SafeAreaView)`
-  flex: 1;
-  background: ${(p) => p.theme.bg};
-`;
-
-const Content = styled(KeyboardAvoidingView)`
-  flex: 1;
-  padding: 16px;
-`;
-
-const Title = styled(Text)`
-  color: ${(p) => p.theme.text};
-  font-size: 26px;
-  font-weight: bold;
-  margin-bottom: 10px;
-`;
-
-const Input = styled(TextInput)`
-  background: ${(p) => p.theme.card};
-  color: ${(p) => p.theme.text};
-  padding: 12px;
-  border-radius: 10px;
-  margin-bottom: 10px;
-`;
-
-const Button = styled(TouchableOpacity)`
-  background: ${(p) => p.theme.accent};
-  padding: 14px;
-  border-radius: 10px;
-  align-items: center;
-  margin-bottom: 10px;
-`;
-
-const ButtonText = styled(Text)`
-  color: #000;
-  font-weight: bold;
-`;
-
-const Preview = styled(Image)`
-  width: 250px;
-  height: 250px;
-  align-self: center;
-  margin-vertical: 20px;
-  border-width: 5px;
-  border-color: #fff;
-  border-radius: 20px;
-`;
-
-const HistoryImage = styled(Image)`
-  width: 80px;
-  height: 80px;
-  margin-right: 10px;
-  border-radius: 10px;
-`;
-
-// ==========================
-// HOOK CUSTOMIZADO
-// ==========================
-const useStickerGenerator = () => {
-  const [loading, setLoading] = useState(false);
-  const [image, setImage] = useState(null);
-  const [status, setStatus] = useState("");
-
-  const generateSticker = useCallback(async (userPrompt) => {
-    if (!userPrompt) return;
-
-    const wrappedPrompt = `(${userPrompt}), die-cut sticker, white outline, thick border, vector art, flat design, white background, high resolution, centered, 2D vector, professional sticker aesthetic, isolated on white`;
-
-    setLoading(true);
-    setStatus("Desenhando...");
-
-    try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 30000);
-
-      const response = await fetch(API_URL, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${HUGGING_FACE_TOKEN}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ inputs: wrappedPrompt }),
-        signal: controller.signal,
-      });
-
-      clearTimeout(timeout);
-
-      // MODELO CARREGANDO (503)
-      if (response.status === 503) {
-        setStatus("Aquecendo motores da IA...");
-        setTimeout(() => generateSticker(userPrompt), 4000);
-        return;
-      }
-
-      if (!response.ok) {
-        throw new Error("Erro na API");
-      }
-
-      const blob = await response.blob();
-
-      // ==========================
-      // CONVERSÃO BLOB → BASE64
-      // Necessário pois o React Native Image não aceita blob diretamente
-      // ==========================
-      const reader = new FileReader();
-
-      const base64 = await new Promise((resolve, reject) => {
-        reader.onloadend = () => resolve(reader.result);
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-      });
-
-      setImage(base64);
-      setStatus("Aplicando bordas...");
-    } catch (err) {
-      if (err.name === "AbortError") {
-        Alert.alert("Timeout", "A IA demorou demais para responder.");
-      } else {
-        Alert.alert("Erro", "Falha ao gerar imagem.");
-      }
-    } finally {
-      setLoading(false);
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial;
+      background: #0d0d0d;
+      color: #fff;
+      display: flex;
+      justify-content: center;
     }
-  }, []);
 
-  return { generateSticker, loading, image, status };
-};
-
-// ==========================
-// APP PRINCIPAL
-// ==========================
-export default function App() {
-  const { generateSticker, loading, image, status } =
-    useStickerGenerator();
-
-  const [prompt, setPrompt] = useState("");
-  const [history, setHistory] = useState([]);
-
-  // ==========================
-  // CARREGAR HISTÓRICO
-  // ==========================
-  useEffect(() => {
-    loadHistory();
-  }, []);
-
-  const loadHistory = async () => {
-    try {
-      const data = await AsyncStorage.getItem(HISTORY_KEY);
-      if (data) setHistory(JSON.parse(data));
-    } catch (e) {
-      console.log(e);
+    .app {
+      max-width: 500px;
+      width: 100%;
+      padding: 20px;
     }
-  };
 
-  // ==========================
-  // SALVAR HISTÓRICO
-  // ==========================
-  const saveToHistory = async (img) => {
-    try {
-      let updated = [img, ...history];
-
-      // evitar duplicados
-      updated = updated.filter(
-        (item, index, self) =>
-          index === self.findIndex((t) => t === item)
-      );
-
-      updated = updated.slice(0, 10);
-
-      setHistory(updated);
-      await AsyncStorage.setItem(HISTORY_KEY, JSON.stringify(updated));
-    } catch (e) {
-      console.log(e);
+    h1 {
+      text-align: center;
     }
-  };
 
-  // ==========================
-  // SALVAR NA GALERIA
-  // ==========================
-  const saveImage = async () => {
-    try {
-      const { status } = await MediaLibrary.requestPermissionsAsync();
-      if (status !== "granted") {
-        Alert.alert("Permissão negada");
-        return;
-      }
-
-      // ==========================
-      // writeAsStringAsync:
-      // salva base64 como arquivo físico no sistema
-      // ==========================
-      const fileUri =
-        FileSystem.cacheDirectory + `sticker-${Date.now()}.png`;
-
-      await FileSystem.writeAsStringAsync(
-        fileUri,
-        image.replace(/^data:image\/\w+;base64,/, ""),
-        {
-          encoding: FileSystem.EncodingType.Base64,
-        }
-      );
-
-      // remover fundo (placeholder)
-      const processed = await ImageManipulator.manipulateAsync(
-        fileUri,
-        [{ resize: { width: 512, height: 512 } }],
-        { compress: 1, format: ImageManipulator.SaveFormat.PNG }
-      );
-
-      await MediaLibrary.createAssetAsync(processed.uri);
-
-      saveToHistory(image);
-
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-
-      Alert.alert("Salvo!", "Sticker salvo na galeria.");
-    } catch (e) {
-      Alert.alert("Erro", "Não foi possível salvar.");
+    input {
+      width: 100%;
+      padding: 12px;
+      border-radius: 10px;
+      border: none;
+      background: #1a1a1a;
+      color: white;
+      margin-bottom: 10px;
     }
-  };
 
-  // ==========================
-  // COMPARTILHAR
-  // ==========================
-  const shareImage = async () => {
-    try {
-      const fileUri =
-        FileSystem.cacheDirectory + `share-${Date.now()}.png`;
-
-      await FileSystem.writeAsStringAsync(
-        fileUri,
-        image.replace(/^data:image\/\w+;base64,/, ""),
-        {
-          encoding: FileSystem.EncodingType.Base64,
-        }
-      );
-
-      await Sharing.shareAsync(fileUri);
-    } catch (e) {
-      Alert.alert("Erro ao compartilhar");
+    button {
+      width: 100%;
+      padding: 14px;
+      border-radius: 10px;
+      border: none;
+      background: #00ffaa;
+      font-weight: bold;
+      cursor: pointer;
+      margin-bottom: 10px;
     }
-  };
 
-  // ==========================
-  // UI
-  // ==========================
-  return (
-    <ThemeProvider theme={theme}>
-      <Container>
-        <Content behavior={Platform.OS === "ios" ? "padding" : undefined}>
-          <Title>StickerAI 🎨</Title>
+    button:active {
+      opacity: 0.7;
+    }
 
-          <Input
-            placeholder="Descreva seu sticker..."
-            placeholderTextColor="#777"
-            value={prompt}
-            onChangeText={setPrompt}
-          />
+    .preview {
+      width: 250px;
+      height: 250px;
+      margin: 20px auto;
+      border: 5px solid white;
+      border-radius: 20px;
+      background: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
 
-          <Button
-            activeOpacity={0.7}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              generateSticker(prompt);
-            }}
-          >
-            <ButtonText>Gerar Sticker</ButtonText>
-          </Button>
+    img {
+      max-width: 100%;
+      max-height: 100%;
+    }
 
-          {loading && (
-            <>
-              <ActivityIndicator size="large" color="#00FFAA" />
-              <Text style={{ color: "#fff", textAlign: "center" }}>
-                {status}
-              </Text>
-            </>
-          )}
+    .history {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+    }
 
-          {image && <Preview source={{ uri: image }} />}
+    .history img {
+      width: 80px;
+      border-radius: 10px;
+      cursor: pointer;
+    }
 
-          {image && (
-            <>
-              <Button onPress={saveImage}>
-                <ButtonText>Salvar</ButtonText>
-              </Button>
+    .status {
+      text-align: center;
+      margin-top: 10px;
+    }
+  </style>
+</head>
 
-              <Button onPress={shareImage}>
-                <ButtonText>Compartilhar</ButtonText>
-              </Button>
-            </>
-          )}
+<body>
+  <div class="app">
+    <h1>StickerAI 🎨</h1>
 
-          <Text style={{ color: "#fff", marginTop: 10 }}>
-            Histórico:
-          </Text>
+    <input id="prompt" placeholder="Descreva seu sticker..." />
 
-          <FlatList
-            horizontal
-            data={history}
-            keyExtractor={(item, index) => index.toString()}
-            renderItem={({ item }) => (
-              <TouchableOpacity onPress={() => setPrompt("")}>
-                <HistoryImage source={{ uri: item }} />
-              </TouchableOpacity>
-            )}
-          />
-        </Content>
-      </Container>
-    </ThemeProvider>
-  );
-}
+    <button onclick="generate()">Gerar Sticker</button>
+
+    <div class="status" id="status"></div>
+
+    <div class="preview" id="preview"></div>
+
+    <button onclick="downloadImage()">Salvar</button>
+
+    <h3>Histórico</h3>
+    <div class="history" id="history"></div>
+  </div>
+
+<script>
+const API_URL = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-2-1";
+const TOKEN = "SEU_TOKEN_AQUI";
+
+let currentImage = null;
+
+// =========================
+// GERAR IMAGEM
+// =========================
+async function generate()
