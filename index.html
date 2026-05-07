@@ -1,204 +1,51 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>EduAI - Assistente Escolar Inteligente</title>
-
-<style>
-*{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
-    font-family:Arial, sans-serif;
-}
-
-body{
-    background:#0f172a;
-    color:white;
-}
-
-header{
-    padding:20px;
-    text-align:center;
-    background:#111827;
-    border-bottom:2px solid #2563eb;
-}
-
-header h1{
-    font-size:38px;
-    color:#60a5fa;
-}
-
-header p{
-    margin-top:10px;
-    color:#cbd5e1;
-}
-
-.container{
-    width:95%;
-    max-width:1200px;
-    margin:auto;
-    padding:30px 0;
-}
-
-.cards{
-    display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
-    gap:20px;
-}
-
-.card{
-    background:#1e293b;
-    border-radius:20px;
-    padding:20px;
-    box-shadow:0 0 15px rgba(0,0,0,0.3);
-}
-
-.card h2{
-    margin-bottom:15px;
-    color:#60a5fa;
-}
-
-textarea,
-input,
-select{
-    width:100%;
-    padding:12px;
-    margin-top:10px;
-    border:none;
-    border-radius:10px;
-    background:#334155;
-    color:white;
-}
-
-button{
-    margin-top:15px;
-    padding:12px;
-    width:100%;
-    border:none;
-    border-radius:10px;
-    background:#2563eb;
-    color:white;
-    font-size:16px;
-    cursor:pointer;
-    transition:0.3s;
-}
-
-button:hover{
-    background:#1d4ed8;
-}
-
-.result{
-    margin-top:15px;
-    background:#0f172a;
-    padding:15px;
-    border-radius:10px;
-    min-height:60px;
-    white-space:pre-wrap;
-}
-
-footer{
-    text-align:center;
-    padding:20px;
-    margin-top:30px;
-    color:#94a3b8;
-}
-</style>
-</head>
-
-<body>
-
-<header>
-    <h1>EduAI</h1>
-    <p>Assistente Escolar Inteligente com IA</p>
-</header>
-
-<div class="container">
-
-<div class="cards">
-
-<!-- IA -->
-<div class="card">
-    <h2>🤖 Assistente IA</h2>
-
-    <textarea id="userQuestion" rows="6" placeholder="Digite sua pergunta ou tarefa..."></textarea>
-
-    <button onclick="askAI()">Perguntar IA</button>
-
-    <div class="result" id="aiResult">
-        A resposta da IA aparecerá aqui.
-    </div>
-</div>
-
-<!-- GERADOR DE CONTAS -->
-<div class="card">
-    <h2>🧮 Gerador de Contas</h2>
-
-    <select id="operation">
-        <option value="soma">Soma</option>
-        <option value="subtracao">Subtração</option>
-        <option value="multiplicacao">Multiplicação</option>
-        <option value="divisao">Divisão</option>
-    </select>
-
-    <button onclick="generateMath()">Gerar Conta</button>
-
-    <div class="result" id="mathResult">
-        Sua conta aparecerá aqui.
-    </div>
-</div>
-
-<!-- GERADOR DE PERGUNTAS -->
-<div class="card">
-    <h2>📚 Gerador de Perguntas</h2>
-
-    <input type="text" id="subject" placeholder="Ex: História, Ciências..." />
-
-    <textarea id="textBase" rows="5" placeholder="Cole um texto para gerar perguntas..."></textarea>
-
-    <button onclick="generateQuestions()">Gerar Perguntas</button>
-
-    <div class="result" id="questionResult">
-        As perguntas aparecerão aqui.
-    </div>
-</div>
-
-</div>
-</div>
-
-<footer>
-    EduAI © 2026
-</footer>
+<!-- SUBSTITUA TODO O <script> ANTIGO POR ESTE -->
 
 <script>
 
-// ASSISTENTE IA
+// ============================
+// CONFIG OPENAI
+// ============================
+
+const API_KEY = "SUA_API_KEY_AQUI";
+
+// ============================
+// IA PRINCIPAL
+// ============================
+
 async function askAI(){
 
-    const question = document.getElementById("userQuestion").value;
-    const result = document.getElementById("aiResult");
+    const question =
+    document.getElementById("userQuestion").value;
+
+    const result =
+    document.getElementById("aiResult");
+
+    if(question.trim() === ""){
+        result.innerHTML =
+        "Digite uma pergunta.";
+        return;
+    }
 
     result.innerHTML = "Pensando...";
 
-    // EXEMPLO DE CONEXÃO COM OPENAI
-    // Coloque sua chave API aqui
-    const API_KEY = "SUA_API_KEY";
-
     try{
 
-        const response = await fetch("https://api.openai.com/v1/chat/completions",{
+        const response = await fetch(
+        "https://api.openai.com/v1/chat/completions",
+        {
             method:"POST",
             headers:{
                 "Content-Type":"application/json",
                 "Authorization":"Bearer " + API_KEY
             },
+
             body:JSON.stringify({
                 model:"gpt-4o-mini",
                 messages:[
                     {
                         role:"system",
-                        content:"Você é um assistente escolar inteligente."
+                        content:
+                        "Você é um professor inteligente que ajuda estudantes."
                     },
                     {
                         role:"user",
@@ -210,8 +57,10 @@ async function askAI(){
 
         const data = await response.json();
 
-        result.innerHTML =
+        const aiText =
         data.choices[0].message.content;
+
+        result.innerHTML = aiText;
 
     }catch(error){
 
@@ -222,7 +71,13 @@ async function askAI(){
 
 }
 
+// ============================
 // GERADOR DE CONTAS
+// ============================
+
+let currentAnswer = 0;
+let currentQuestion = "";
+
 function generateMath(){
 
     const operation =
@@ -231,42 +86,113 @@ function generateMath(){
     let n1 = Math.floor(Math.random()*100);
     let n2 = Math.floor(Math.random()*100);
 
-    let question = "";
-    let answer = 0;
+    if(operation === "divisao"){
+        n2 = Math.floor(Math.random()*9)+1;
+    }
 
     if(operation === "soma"){
-        question = `${n1} + ${n2}`;
-        answer = n1+n2;
+        currentQuestion = `${n1} + ${n2}`;
+        currentAnswer = n1 + n2;
     }
 
     if(operation === "subtracao"){
-        question = `${n1} - ${n2}`;
-        answer = n1-n2;
+        currentQuestion = `${n1} - ${n2}`;
+        currentAnswer = n1 - n2;
     }
 
     if(operation === "multiplicacao"){
-        question = `${n1} × ${n2}`;
-        answer = n1*n2;
+        currentQuestion = `${n1} × ${n2}`;
+        currentAnswer = n1 * n2;
     }
 
     if(operation === "divisao"){
-        n2 = Math.floor(Math.random()*9)+1;
-        answer = n1;
-        question = `${n1*n2} ÷ ${n2}`;
+        currentQuestion = `${n1*n2} ÷ ${n2}`;
+        currentAnswer = n1;
     }
 
     document.getElementById("mathResult").innerHTML =
     `
-    Conta:
-    ${question}
+    <h3>${currentQuestion}</h3>
 
-    Resposta:
-    ${answer}
+    <input
+        type="number"
+        id="userMathAnswer"
+        placeholder="Digite sua resposta"
+    >
+
+    <button onclick="checkMathAnswer()">
+        Verificar Resposta
+    </button>
+
+    <div id="mathFeedback"></div>
     `;
 }
 
-// GERADOR DE PERGUNTAS
-function generateQuestions(){
+// ============================
+// VERIFICAR RESPOSTA
+// ============================
+
+function checkMathAnswer(){
+
+    const userAnswer =
+    Number(document.getElementById(
+    "userMathAnswer").value);
+
+    const feedback =
+    document.getElementById("mathFeedback");
+
+    if(userAnswer === currentAnswer){
+
+        feedback.innerHTML =
+        `
+        <div style="
+            margin-top:15px;
+            background:#16a34a;
+            padding:15px;
+            border-radius:10px;
+        ">
+            ✅ RESPOSTA EXATA!
+        </div>
+        `;
+
+    }else{
+
+        feedback.innerHTML =
+        `
+        <div style="
+            margin-top:15px;
+            background:#dc2626;
+            padding:15px;
+            border-radius:10px;
+        ">
+            ❌ Você errou.
+
+            <br><br>
+
+            Resposta correta:
+            <b>${currentAnswer}</b>
+
+            <br><br>
+
+            Você provavelmente:
+            <br>
+            • Errou a conta
+            <br>
+            • Confundiu os sinais
+            <br>
+            • Digitou errado
+        </div>
+        `;
+
+    }
+
+}
+
+// ============================
+// GERADOR IA DE PERGUNTAS
+// ============================
+
+async function generateQuestions(){
 
     const subject =
     document.getElementById("subject").value;
@@ -274,36 +200,81 @@ function generateQuestions(){
     const text =
     document.getElementById("textBase").value;
 
-    let questions = `
-1. O que você aprendeu sobre ${subject}?
+    const result =
+    document.getElementById("questionResult");
 
-2. Qual foi a parte mais importante do texto?
+    if(text.trim() === ""){
 
-3. Explique com suas palavras o conteúdo estudado.
+        result.innerHTML =
+        "Digite ou cole um texto.";
 
-4. Faça um resumo rápido sobre o assunto.
+        return;
+    }
 
-5. Qual informação chamou mais atenção?
-`;
+    result.innerHTML =
+    "Gerando perguntas inteligentes...";
 
-    if(text.length > 30){
+    try{
 
-        questions += `
-        
-6. Qual é a ideia principal do texto?
+        const response = await fetch(
+        "https://api.openai.com/v1/chat/completions",
+        {
+            method:"POST",
 
-7. Cite duas informações importantes encontradas.
+            headers:{
+                "Content-Type":"application/json",
+                "Authorization":"Bearer " + API_KEY
+            },
 
-8. O texto fala sobre quais temas principais?
-`;
+            body:JSON.stringify({
+
+                model:"gpt-4o-mini",
+
+                messages:[
+
+                    {
+                        role:"system",
+                        content:
+                        `
+                        Você cria perguntas escolares inteligentes.
+                        Gere perguntas EXATAMENTE sobre o texto enviado.
+                        `
+                    },
+
+                    {
+                        role:"user",
+                        content:
+                        `
+                        Matéria:
+                        ${subject}
+
+                        Texto:
+                        ${text}
+
+                        Gere 5 perguntas.
+                        `
+                    }
+
+                ]
+
+            })
+
+        });
+
+        const data = await response.json();
+
+        const aiQuestions =
+        data.choices[0].message.content;
+
+        result.innerHTML = aiQuestions;
+
+    }catch(error){
+
+        result.innerHTML =
+        "Erro ao gerar perguntas.";
 
     }
 
-    document.getElementById("questionResult").innerHTML =
-    questions;
 }
 
 </script>
-
-</body>
-</html>
